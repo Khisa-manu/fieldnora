@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     repository: JobRepository
 ) {
+    val context = LocalContext.current
     var serverUrl by remember { mutableStateOf(RetrofitClient.baseUrl) }
     val syncMessage by repository.syncMessage.collectAsState()
     val scope = rememberCoroutineScope()
@@ -89,7 +91,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("API Gateway & Synchronization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Slate900)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Syncs with fieldnora backend on Google Cloud Run.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+                    Text("Connects with the FieldNora Web Dashboard backend.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -101,12 +103,37 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quick URL Presets
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { serverUrl = RetrofitClient.PRODUCTION_BASE_URL },
+                            modifier = Modifier.weight(1.2f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                        ) {
+                            Text("Railway Production", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { serverUrl = "http://10.0.2.2:3000/" },
+                            modifier = Modifier.weight(0.9f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                        ) {
+                            Text("Emulator", fontSize = 11.sp)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
                         onClick = {
                             isTestingConnection = true
-                            RetrofitClient.rebuildWithBaseUrl(serverUrl)
+                            RetrofitClient.rebuildWithBaseUrl(serverUrl, context)
                             scope.launch {
                                 repository.refreshJobsFromNetwork()
                                 isTestingConnection = false

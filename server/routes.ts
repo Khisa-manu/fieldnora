@@ -248,8 +248,79 @@ apiRouter.delete('/customers/:id', (req: Request, res: Response) => {
 });
 
 // ----------------------------------------------------
-// 4. JOBS / WORK ORDERS
+// 4. JOBS / WORK ORDERS & TECHNICIAN MOBILE WORKFLOW
 // ----------------------------------------------------
+
+function enrichJob(job: any, customer?: any): any {
+  const cust = customer || db.getCustomerById(job.customerId) || {
+    id: job.customerId || 'cust-generic',
+    name: 'Customer Site',
+    companyName: '',
+    phone: '+254 700 000 000',
+    email: 'info@fieldnora.co.ke',
+    address: 'Nairobi, Kenya',
+    county: 'Nairobi',
+    latitude: -1.286389,
+    longitude: 36.817223,
+  };
+
+  const labourTotal = (job.labour || []).reduce(
+    (acc: number, l: any) => acc + (l.total || l.totalPrice || (l.hours * l.hourlyRate) || 0),
+    0
+  );
+  const materialsTotal = (job.materials || []).reduce(
+    (acc: number, m: any) => acc + (m.total || m.totalPrice || (m.quantity * m.unitPrice) || 0),
+    0
+  );
+  const totalAmountKes = labourTotal + materialsTotal || 8500;
+
+  const lineItems = [
+    ...(job.labour || []).map((l: any) => ({
+      id: l.id || 'li-' + Math.random().toString(36).substring(2, 8),
+      name: l.description || 'Labour Service',
+      quantity: l.hours || 1,
+      unitPriceKes: l.hourlyRate || l.total || 1500,
+      totalKes: l.total || l.totalPrice || (l.hours * l.hourlyRate) || 1500,
+    })),
+    ...(job.materials || []).map((m: any) => ({
+      id: m.id || 'li-' + Math.random().toString(36).substring(2, 8),
+      name: m.name || 'Consumable / Replacement Part',
+      quantity: m.quantity || 1,
+      unitPriceKes: m.unitPrice || 1000,
+      totalKes: m.total || m.totalPrice || (m.quantity * m.unitPrice) || 1000,
+    })),
+  ];
+
+  // Infer trade if not explicitly defined
+  let trade = job.trade || 'Engineering Service';
+  const text = ((job.title || '') + ' ' + (job.description || '')).toLowerCase();
+  if (text.includes('hvac') || text.includes('air') || text.includes('ac') || text.includes('refrigerant')) {
+    trade = 'HVAC & Refrigeration';
+  } else if (text.includes('solar') || text.includes('inverter') || text.includes('pv') || text.includes('battery')) {
+    trade = 'Solar & Renewable Energy';
+  } else if (text.includes('electric') || text.includes('mcb') || text.includes('breaker') || text.includes('generator')) {
+    trade = 'Electrical Systems';
+  } else if (text.includes('plumb') || text.includes('pipe') || text.includes('pump') || text.includes('tank') || text.includes('valve')) {
+    trade = 'Plumbing & Water';
+  } else if (text.includes('cctv') || text.includes('camera') || text.includes('security') || text.includes('alarm')) {
+    trade = 'Security & CCTV';
+  }
+
+  return {
+    ...job,
+    trade,
+    customer: cust,
+    scheduledTime: job.scheduledTime || job.startTime || '09:00',
+    estimatedDurationHours: job.estimatedDurationHours || (job.estimatedDurationMin ? job.estimatedDurationMin / 60 : 2.0),
+    totalAmountKes,
+    lineItems: lineItems.length > 0 ? lineItems : [
+      { id: 'li-default', name: 'Diagnostic & Field Inspection', quantity: 1, unitPriceKes: totalAmountKes, totalKes: totalAmountKes }
+    ],
+    signedBy: job.signedBy || job.customerSignature?.signerName || null,
+    signedAt: job.signedAt || job.customerSignature?.signedAt || null,
+  };
+}
+
 apiRouter.get('/jobs', (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   let jobs = db.getJobs(orgId);
@@ -281,7 +352,9 @@ apiRouter.get('/jobs', (req: Request, res: Response) => {
     );
   }
 
-  res.json(jobs);
+  // Enrich each job with customer data and mobile-friendly fields
+  const enrichedJobs = jobs.map(j => enrichJob(j));
+  res.json(enrichedJobs);
 });
 
 apiRouter.get('/jobs/:id', (req: Request, res: Response) => {
@@ -293,8 +366,15 @@ apiRouter.get('/jobs/:id', (req: Request, res: Response) => {
 
   const customer = db.getCustomerById(job.customerId);
   const technicians = db.getTechnicians(orgId).filter(t => job.assignedTechnicianIds.includes(t.id));
+  const enriched = enrichJob(job, customer);
 
-  res.json({ job, customer, technicians });
+  // Return structure supporting both Kotlin Retrofit (direct Job object) and Web Dashboard ({ job, customer, technicians })
+  res.json({
+    ...enriched,
+    job: enriched,
+    customer: enriched.customer,
+    technicians,
+  });
 });
 
 apiRouter.post('/jobs', (req: Request, res: Response) => {
@@ -332,15 +412,51 @@ apiRouter.post('/jobs', (req: Request, res: Response) => {
     actorName
   );
 
-  res.status(201).json(newJob);
+  const enriched = enrichJob(newJob);
+  res.status(201).json(enriched);
 });
 
 apiRouter.put('/jobs/:id', (req: Request, res: Response) => {
   const actorName = getActorName(req);
   const updated = db.updateJob(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  res.json(updated);
+  const enriched = enrichJob(updated);
+  res.json({
+    ...enriched,
+    job: enriched,
+  });
 });
+
+// Update Job Status (supports both PATCH /jobs/:id/status and POST /jobs/:id/status from Android/Web)
+const updateJobStatusHandler = (req: Request, res: Response) => {
+  const { status, notes, latitude, longitude } = req.body;
+  const actorName = getActorName(req);
+  const now = new Date().toISOString();
+
+  const updateData: any = { status };
+  if (status === 'en_route') {
+    updateData.travelStartTime = now;
+  } else if (status === 'on_site') {
+    updateData.checkInTime = now;
+    updateData.checkInLat = latitude || -1.286389;
+    updateData.checkInLng = longitude || 36.817223;
+  } else if (status === 'completed') {
+    updateData.checkOutTime = now;
+    if (notes) updateData.completionNotes = notes;
+  }
+
+  const updated = db.updateJob(req.params.id, updateData, actorName);
+  if (!updated) return res.status(404).json({ error: 'Job not found' });
+
+  const enriched = enrichJob(updated);
+  res.json({
+    ...enriched,
+    job: enriched,
+  });
+};
+
+apiRouter.patch('/jobs/:id/status', updateJobStatusHandler);
+apiRouter.post('/jobs/:id/status', updateJobStatusHandler);
 
 // Technician mobile workflow actions
 apiRouter.post('/jobs/:id/check-in', (req: Request, res: Response) => {
@@ -360,28 +476,41 @@ apiRouter.post('/jobs/:id/check-in', (req: Request, res: Response) => {
   );
 
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  res.json(updated);
+  const enriched = enrichJob(updated);
+  res.json({
+    ...enriched,
+    job: enriched,
+  });
 });
 
 apiRouter.post('/jobs/:id/signature', (req: Request, res: Response) => {
-  const { signerName, dataUrl, customerAcceptedNotes } = req.body;
+  const signerName = req.body.signedBy || req.body.signerName || 'Customer Authorized Signatory';
+  const dataUrl = req.body.signatureBase64 || req.body.dataUrl || 'data:image/svg+xml;base64,signature';
+  const customerAcceptedNotes = req.body.notes || req.body.customerAcceptedNotes || 'Work inspected and approved.';
   const actorName = getActorName(req);
+  const now = new Date().toISOString();
 
   const updated = db.updateJob(
     req.params.id,
     {
+      status: 'completed',
+      checkOutTime: now,
       customerSignature: {
-        signerName: signerName || 'Customer Authorized Signatory',
-        signedAt: new Date().toISOString(),
+        signerName,
+        signedAt: now,
         dataUrl,
-        customerAcceptedNotes: customerAcceptedNotes || 'Work inspected and approved.',
+        customerAcceptedNotes,
       },
     },
     actorName
   );
 
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  res.json(updated);
+  const enriched = enrichJob(updated);
+  res.json({
+    ...enriched,
+    job: enriched,
+  });
 });
 
 apiRouter.post('/jobs/:id/photos', (req: Request, res: Response) => {
@@ -649,6 +778,25 @@ apiRouter.post('/payments/mpesa/stk-push', async (req: Request, res: Response) =
 // ----------------------------------------------------
 // 9. INVENTORY
 // ----------------------------------------------------
+apiRouter.get('/inventory', (req: Request, res: Response) => {
+  const orgId = getOrgId(req);
+  const products = db.getProducts(orgId);
+  const mapped = products.map(p => ({
+    id: p.id,
+    sku: p.sku,
+    name: p.name,
+    category: p.category,
+    unitPriceKes: p.sellingPrice || 0,
+    vanStockQty: p.stockQuantity || 0,
+    unit: p.unit || 'pcs',
+    isConsumable: p.type === 'part' || p.type === 'product',
+    sellingPrice: p.sellingPrice,
+    costPrice: p.costPrice,
+    stockQuantity: p.stockQuantity,
+  }));
+  res.json(mapped);
+});
+
 apiRouter.get('/inventory/products', (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   res.json(db.getProducts(orgId));
@@ -897,5 +1045,41 @@ apiRouter.get('/mobile/download-zip', (req: Request, res: Response) => {
   });
 
   archive.finalize();
+});
+
+// ----------------------------------------------------
+// 14. SYSTEM & MOBILE CLIENT CONFIG
+// ----------------------------------------------------
+apiRouter.get('/system/status', (req: Request, res: Response) => {
+  const orgId = getOrgId(req);
+  res.json({
+    status: 'online',
+    service: 'fieldnora-core-api',
+    orgId,
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    totalJobs: db.getJobs(orgId).length,
+    activeTechnicians: db.getTechnicians(orgId).length,
+  });
+});
+
+apiRouter.get('/config', (req: Request, res: Response) => {
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const fullBaseUrl = `${protocol}://${host}`;
+
+  res.json({
+    backendUrl: fullBaseUrl,
+    apiBase: `${fullBaseUrl}/api`,
+    productionBaseUrl: 'https://fieldnora-production.up.railway.app/',
+    emulatorUrl: 'http://10.0.2.2:3000',
+    orgId: getOrgId(req),
+    defaultTechnician: {
+      id: 'tech-1',
+      name: 'Brian Kiprop',
+      trade: 'HVAC & Refrigeration',
+      phone: '+254 712 345 678',
+    },
+  });
 });
 

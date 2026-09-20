@@ -1,6 +1,7 @@
 package com.fieldnora.technician
 
 import android.app.Application
+import com.fieldnora.technician.data.api.RetrofitClient
 import com.fieldnora.technician.data.repository.JobRepository
 
 class FieldNoraApplication : Application() {
@@ -10,6 +11,7 @@ class FieldNoraApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        RetrofitClient.init(this)
         jobRepository = JobRepository(applicationContext)
     }
 

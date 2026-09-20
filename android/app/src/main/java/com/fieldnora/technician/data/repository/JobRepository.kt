@@ -136,13 +136,31 @@ class JobRepository(private val context: Context) {
         try {
             val response = RetrofitClient.apiService.getAssignedJobs()
             if (response.isSuccessful && response.body() != null) {
-                _jobs.value = response.body()!!
-                _syncMessage.value = "Synced with Cloud Run at ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}"
+                val networkJobs = response.body()!!
+                // Preserve locally modified offline items
+                val offlineModifiedMap = _jobs.value.filter { it.isOfflineModified }.associateBy { it.id }
+                val merged = networkJobs.map { netJob ->
+                    offlineModifiedMap[netJob.id] ?: netJob
+                }
+                _jobs.value = merged
+                _syncMessage.value = "Synced with Dashboard at ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}"
             } else {
                 _syncMessage.value = "Using local cache (Server code: ${response.code()})"
             }
+            refreshInventoryFromNetwork()
         } catch (e: Exception) {
-            _syncMessage.value = "Offline mode active (Local changes saved)"
+            _syncMessage.value = "Offline mode active (${e.localizedMessage ?: "Local cache"})"
+        }
+    }
+
+    suspend fun refreshInventoryFromNetwork() {
+        try {
+            val invResponse = RetrofitClient.apiService.getVanInventory()
+            if (invResponse.isSuccessful && invResponse.body() != null) {
+                _inventory.value = invResponse.body()!!
+            }
+        } catch (_: Exception) {
+            // Retain local van inventory on failure
         }
     }
 

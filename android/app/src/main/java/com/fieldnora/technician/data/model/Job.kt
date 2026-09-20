@@ -25,25 +25,25 @@ enum class JobPriority(val label: String) {
 }
 
 data class JobLineItem(
-    @SerializedName("id") val id: String,
-    @SerializedName("name") val name: String,
-    @SerializedName("quantity") val quantity: Double,
-    @SerializedName("unitPriceKes") val unitPriceKes: Double,
-    @SerializedName("totalKes") val totalKes: Double
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val name: String = "Service Item",
+    @SerializedName("quantity") val quantity: Double = 1.0,
+    @SerializedName("unitPriceKes") val unitPriceKes: Double = 0.0,
+    @SerializedName("totalKes") val totalKes: Double = 0.0
 )
 
 data class Job(
-    @SerializedName("id") val id: String,
-    @SerializedName("jobNumber") val jobNumber: String,
-    @SerializedName("title") val title: String,
-    @SerializedName("description") val description: String,
-    @SerializedName("trade") val trade: String,
+    @SerializedName("id") val id: String = "",
+    @SerializedName("jobNumber") val jobNumber: String = "WO-PENDING",
+    @SerializedName("title") val title: String = "Work Order",
+    @SerializedName("description") val description: String = "",
+    @SerializedName("trade") val trade: String = "General Service",
     @SerializedName("status") val status: JobStatus = JobStatus.SCHEDULED,
     @SerializedName("priority") val priority: JobPriority = JobPriority.MEDIUM,
-    @SerializedName("customerId") val customerId: String,
-    @SerializedName("customer") val customer: Customer,
-    @SerializedName("scheduledDate") val scheduledDate: String,
-    @SerializedName("scheduledTime") val scheduledTime: String,
+    @SerializedName("customerId") val customerId: String = "",
+    @SerializedName("customer") val customer: Customer = Customer(),
+    @SerializedName("scheduledDate") val scheduledDate: String = "",
+    @SerializedName("scheduledTime") val scheduledTime: String = "09:00",
     @SerializedName("estimatedDurationHours") val estimatedDurationHours: Double = 2.0,
     @SerializedName("totalAmountKes") val totalAmountKes: Double = 0.0,
     @SerializedName("lineItems") val lineItems: List<JobLineItem> = emptyList(),

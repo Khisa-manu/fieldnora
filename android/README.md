@@ -12,6 +12,7 @@ This is the production-ready native Android application for **fieldnora**, built
 - **Target SDK / Compile SDK:** API 34 (Android 14)
 - **Package Identifier:** `com.fieldnora.technician`
 - **Networking:** Retrofit 2.11 + OkHttp 4.12 with JSON Serialization
+  - **Base URL:** `https://fieldnora-production.up.railway.app/` (Hardcoded default in `RetrofitClient.kt`)
 - **Concurrency & State:** Kotlin Coroutines + `StateFlow`
 - **Navigation:** Jetpack Compose Navigation (`androidx.navigation:navigation-compose`)
 - **Native Hardware Integration:**

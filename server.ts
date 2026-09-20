@@ -1,11 +1,22 @@
 import express from 'express';
 import path from 'path';
+import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // Cross-Origin Resource Sharing for Android Native App, Emulators & Web
+  app.use(
+    cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-org-id', 'x-user-name'],
+      credentials: false,
+    })
+  );
 
   // Body parsers
   app.use(express.json({ limit: '15mb' }));
