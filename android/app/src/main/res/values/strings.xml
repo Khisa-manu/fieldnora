@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">fieldnora</string>
+    <string name="app_subtitle">Field Operations &amp; Dispatch (Kenya)</string>
+    
+    <!-- Navigation -->
+    <string name="nav_jobs">Work Orders</string>
+    <string name="nav_inventory">Van Stock</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Job Actions -->
+    <string name="action_en_route">Mark En Route</string>
+    <string name="action_arrived">Arrived On Site</string>
+    <string name="action_start_work">Start Diagnostic/Work</string>
+    <string name="action_complete">Complete &amp; Sign-Off</string>
+    <string name="action_navigate">Turn-by-Turn GPS</string>
+    <string name="action_call">Call Customer</string>
+    <string name="action_whatsapp">WhatsApp Dispatch</string>
+    
+    <!-- Status -->
+    <string name="status_scheduled">Scheduled</string>
+    <string name="status_en_route">En Route</string>
+    <string name="status_in_progress">In Progress</string>
+    <string name="status_completed">Completed</string>
+</resources>

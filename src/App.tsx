@@ -22,6 +22,7 @@ import { CustomerPortalView } from './components/portal/CustomerPortalView';
 import { ReportsView } from './components/reports/ReportsView';
 import { AuditLogsView } from './components/audit/AuditLogsView';
 import { ServicesCatalogView } from './components/services/ServicesCatalogView';
+import { MobileAppCenterView } from './components/mobile/MobileAppCenterView';
 
 const MainLayout: React.FC = () => {
   const { activeTab, technicianViewMode } = useApp();
@@ -39,6 +40,8 @@ const MainLayout: React.FC = () => {
         return <DispatchView />;
       case 'technician':
         return <TechnicianMobileView />;
+      case 'mobile':
+        return <MobileAppCenterView />;
       case 'services':
         return <ServicesCatalogView />;
       case 'map':

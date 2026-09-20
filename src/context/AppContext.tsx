@@ -8,6 +8,7 @@ export type ActiveTab =
   | 'jobs'
   | 'dispatch'
   | 'technician'
+  | 'mobile'
   | 'services'
   | 'map'
   | 'estimates'

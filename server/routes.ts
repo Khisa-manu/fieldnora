@@ -1,6 +1,9 @@
 import express, { Request, Response } from 'express';
 import { db } from './db';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import { ZipArchive } from 'archiver';
 
 export const apiRouter = express.Router();
 
@@ -858,3 +861,41 @@ apiRouter.get('/reports', (req: Request, res: Response) => {
     totalPartsInStock: products.filter(p => p.type === 'part' || p.type === 'product').reduce((sum, p) => sum + p.stockQuantity, 0),
   });
 });
+
+// ----------------------------------------------------
+// NATIVE KOTLIN ANDROID APP DOWNLOAD (.ZIP)
+// ----------------------------------------------------
+apiRouter.get('/mobile/download-zip', (req: Request, res: Response) => {
+  const androidDir = path.join(process.cwd(), 'android');
+
+  if (!fs.existsSync(androidDir)) {
+    return res.status(404).json({ error: 'Android Kotlin project directory not found' });
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="fieldnora-android-kotlin.zip"');
+
+  const archive = new (ZipArchive as any)({
+    zlib: { level: 9 },
+  });
+
+  archive.on('error', (err: any) => {
+    console.error('Archiver error:', err);
+    if (!res.headersSent) {
+      res.status(500).send({ error: err.message });
+    }
+  });
+
+  archive.pipe(res);
+
+  // Append android directory excluding build, .gradle, etc.
+  archive.directory(androidDir, 'fieldnora-android-kotlin', (entry: any) => {
+    if (entry.name.includes('.gradle') || entry.name.includes('/build') || entry.name.includes('.idea')) {
+      return false;
+    }
+    return entry;
+  });
+
+  archive.finalize();
+});
+

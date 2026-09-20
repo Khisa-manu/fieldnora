@@ -57,6 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           label: 'Technician Mobile App',
           icon: <Smartphone className="w-4.5 h-4.5" />,
           badge: 'Field Ready',
+        },
+        {
+          id: 'mobile',
+          label: 'Native Android (Kotlin APK)',
+          icon: <Smartphone className="w-4.5 h-4.5" />,
+          badge: 'Kotlin',
           highlight: true,
         },
         { id: 'map', label: 'GPS & Location Map', icon: <MapPin className="w-4.5 h-4.5" /> },

@@ -167,6 +167,23 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
           <span>EAT (UTC+3)</span>
         </div>
 
+        {/* Native Android Kotlin / APK Build Center button */}
+        <button
+          onClick={() => {
+            setActiveTab('mobile');
+            showToast('Opened Native Kotlin Android Studio APK Center', 'info');
+          }}
+          className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+            activeTab === 'mobile'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-slate-100 text-slate-800 border-slate-300/80 hover:bg-slate-200'
+          }`}
+          title="Native Android (Kotlin) Studio APK Center"
+        >
+          <Smartphone className={`w-3.5 h-3.5 ${activeTab === 'mobile' ? 'text-teal-400' : 'text-slate-600'}`} />
+          <span>Kotlin APK</span>
+        </button>
+
         {/* Technician Field Mobile Mode Toggle */}
         <button
           id="tech-mobile-toggle-btn"
