@@ -20,8 +20,7 @@ import com.fieldnora.technician.ui.screens.jobdetail.JobDetailScreen
 import com.fieldnora.technician.ui.screens.jobs.JobsListScreen
 import com.fieldnora.technician.ui.screens.settings.SettingsScreen
 import com.fieldnora.technician.ui.screens.signature.SignatureScreen
-import com.fieldnora.technician.ui.theme.FieldNoraTeal
-import com.fieldnora.technician.ui.theme.Slate900
+import com.fieldnora.technician.ui.theme.*
 
 data class BottomNavItem(
     val title: String,

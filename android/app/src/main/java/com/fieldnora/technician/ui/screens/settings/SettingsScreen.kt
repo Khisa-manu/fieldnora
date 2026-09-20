@@ -19,10 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fieldnora.technician.data.api.RetrofitClient
 import com.fieldnora.technician.data.repository.JobRepository
-import com.fieldnora.technician.ui.theme.FieldNoraTeal
-import com.fieldnora.technician.ui.theme.Slate50
-import com.fieldnora.technician.ui.theme.Slate500
-import com.fieldnora.technician.ui.theme.Slate900
+import com.fieldnora.technician.ui.theme.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

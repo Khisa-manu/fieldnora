@@ -159,7 +159,7 @@ class JobRepository(private val context: Context) {
             if (invResponse.isSuccessful && invResponse.body() != null) {
                 _inventory.value = invResponse.body()!!
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             // Retain local van inventory on failure
         }
     }

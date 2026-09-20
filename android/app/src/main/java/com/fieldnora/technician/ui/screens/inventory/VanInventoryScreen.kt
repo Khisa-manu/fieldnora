@@ -17,10 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fieldnora.technician.data.repository.JobRepository
-import com.fieldnora.technician.ui.theme.FieldNoraTealDark
-import com.fieldnora.technician.ui.theme.Slate50
-import com.fieldnora.technician.ui.theme.Slate500
-import com.fieldnora.technician.ui.theme.Slate900
+import com.fieldnora.technician.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
