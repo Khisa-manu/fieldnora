@@ -2,6 +2,10 @@ package com.fieldnora.technician.data.api
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.fieldnora.technician.data.model.JobPriority
+import com.fieldnora.technician.data.model.JobStatus
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -20,6 +24,15 @@ object RetrofitClient {
         private set
 
     private var _apiService: FieldNoraApiService? = null
+
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(JobStatus::class.java, JsonDeserializer { json, _, _ ->
+            JobStatus.fromValue(json?.asString)
+        })
+        .registerTypeAdapter(JobPriority::class.java, JsonDeserializer { json, _, _ ->
+            JobPriority.fromValue(json?.asString)
+        })
+        .create()
 
     private val authHeaderInterceptor = Interceptor { chain ->
         val original = chain.request()
@@ -51,12 +64,25 @@ object RetrofitClient {
             return _apiService!!
         }
 
+    fun cleanUrl(rawUrl: String): String {
+        var trimmed = rawUrl.trim()
+        if (trimmed.isEmpty()) return PRODUCTION_BASE_URL
+        // Fix typo: uip.railway.app -> up.railway.app
+        if (trimmed.contains("uip.railway.app")) {
+            trimmed = trimmed.replace("uip.railway.app", "up.railway.app")
+        }
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            trimmed = "https://$trimmed"
+        }
+        return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+    }
+
     private fun buildService(url: String): FieldNoraApiService {
-        val sanitized = if (url.endsWith("/")) url else "$url/"
+        val sanitized = cleanUrl(url)
         return Retrofit.Builder()
             .baseUrl(sanitized)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(FieldNoraApiService::class.java)
     }
@@ -64,7 +90,7 @@ object RetrofitClient {
     fun init(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val savedUrl = prefs.getString(KEY_BASE_URL, null)
-        if (!savedUrl.isNullOrBlank() && !savedUrl.contains("10.0.2.2")) {
+        if (!savedUrl.isNullOrBlank() && !savedUrl.contains("10.0.2.2") && !savedUrl.contains("uip.railway.app")) {
             rebuildWithBaseUrl(savedUrl, context)
         } else {
             rebuildWithBaseUrl(PRODUCTION_BASE_URL, context)
@@ -72,16 +98,26 @@ object RetrofitClient {
     }
 
     fun rebuildWithBaseUrl(newUrl: String, context: Context? = null): FieldNoraApiService {
-        val sanitized = if (newUrl.endsWith("/")) newUrl.trim() else "${newUrl.trim()}/"
-        baseUrl = sanitized
-        val newService = buildService(sanitized)
-        _apiService = newService
+        val sanitized = cleanUrl(newUrl)
+        return try {
+            val newService = buildService(sanitized)
+            baseUrl = sanitized
+            _apiService = newService
 
-        context?.let {
-            val prefs = it.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_BASE_URL, sanitized).apply()
+            context?.let {
+                val prefs = it.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putString(KEY_BASE_URL, sanitized).apply()
+            }
+            newService
+        } catch (e: Exception) {
+            val fallback = buildService(PRODUCTION_BASE_URL)
+            baseUrl = PRODUCTION_BASE_URL
+            _apiService = fallback
+            context?.let {
+                val prefs = it.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putString(KEY_BASE_URL, PRODUCTION_BASE_URL).apply()
+            }
+            fallback
         }
-
-        return newService
     }
 }

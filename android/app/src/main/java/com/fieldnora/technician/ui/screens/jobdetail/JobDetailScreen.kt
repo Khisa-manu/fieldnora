@@ -125,13 +125,13 @@ fun JobDetailScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = job.customer.name,
+                        text = job.safeCustomer.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = Slate900
                     )
                     Text(
-                        text = job.customer.address,
+                        text = job.safeCustomer.address,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Slate500
                     )
@@ -146,9 +146,16 @@ fun JobDetailScreen(
                         // GPS Intent
                         OutlinedButton(
                             onClick = {
-                                val gmmIntentUri = Uri.parse("geo:${job.customer.latitude},${job.customer.longitude}?q=${Uri.encode(job.customer.address)}")
-                                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
-                                context.startActivity(mapIntent)
+                                try {
+                                    val gmmIntentUri = Uri.parse("geo:${job.safeCustomer.latitude},${job.safeCustomer.longitude}?q=${Uri.encode(job.safeCustomer.address)}")
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                    context.startActivity(mapIntent)
+                                } catch (e: Exception) {
+                                    try {
+                                        val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(job.safeCustomer.address)}")
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                    } catch (_: Exception) {}
+                                }
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
@@ -161,8 +168,10 @@ fun JobDetailScreen(
                         // Call Intent
                         OutlinedButton(
                             onClick = {
-                                val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${job.customer.phone}"))
-                                context.startActivity(callIntent)
+                                try {
+                                    val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${job.safeCustomer.phone}"))
+                                    context.startActivity(callIntent)
+                                } catch (_: Exception) {}
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
@@ -175,11 +184,13 @@ fun JobDetailScreen(
                         // WhatsApp Intent
                         Button(
                             onClick = {
-                                val cleanPhone = job.customer.phone.replace("+", "").replace(" ", "")
-                                val text = "Habari! This is Brian from fieldnora service. I am on my way for work order ${job.jobNumber}."
-                                val url = "https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(text)}"
-                                val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(waIntent)
+                                try {
+                                    val cleanPhone = job.safeCustomer.phone.replace("+", "").replace(" ", "").replace("-", "")
+                                    val text = "Habari! This is Brian from fieldnora service. I am on my way for work order ${job.jobNumber}."
+                                    val url = "https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(text)}"
+                                    val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(waIntent)
+                                } catch (_: Exception) {}
                             },
                             modifier = Modifier.weight(1.2f),
                             shape = RoundedCornerShape(10.dp),
@@ -207,7 +218,7 @@ fun JobDetailScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    job.lineItems.forEach { item ->
+                    job.safeLineItems.forEach { item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -256,7 +267,7 @@ fun JobDetailScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     when (job.status) {
-                        JobStatus.SCHEDULED -> {
+                        JobStatus.ASSIGNED, JobStatus.NEW, JobStatus.SCHEDULED -> {
                             Button(
                                 onClick = { scope.launch { repository.updateJobStatus(job.id, JobStatus.EN_ROUTE) } },
                                 modifier = Modifier.fillMaxWidth(),
@@ -320,6 +331,21 @@ fun JobDetailScreen(
                                 job.signedBy?.let {
                                     Text("Signed by: $it", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF065F46))
                                 }
+                            }
+                        }
+                        else -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Slate100)
+                                    .padding(12.dp)
+                            ) {
+                                Text(
+                                    text = "Current Status: ${job.status.displayName}",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Slate900
+                                )
                             }
                         }
                     }

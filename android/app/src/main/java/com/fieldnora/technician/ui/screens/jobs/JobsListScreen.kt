@@ -207,7 +207,7 @@ fun JobCard(job: Job, onClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = job.customer.address,
+                        text = job.safeCustomer.address,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Slate500,
                         maxLines = 1
@@ -229,11 +229,16 @@ fun JobCard(job: Job, onClick: () -> Unit) {
 fun StatusBadge(status: JobStatus) {
     val (bgColor, textColor, label) = when (status) {
         JobStatus.SCHEDULED -> Triple(Color(0xFFE0F2FE), Color(0xFF0369A1), "SCHEDULED")
+        JobStatus.ASSIGNED -> Triple(Color(0xFFE0F2FE), Color(0xFF0284C7), "ASSIGNED")
+        JobStatus.NEW -> Triple(Color(0xFFE0F2FE), Color(0xFF0284C7), "NEW")
         JobStatus.EN_ROUTE -> Triple(Color(0xFFEDE9FE), Color(0xFF6D28D9), "EN ROUTE")
         JobStatus.ON_SITE -> Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "ON SITE")
         JobStatus.IN_PROGRESS -> Triple(Color(0xFFCCFBF1), Color(0xFF0F766E), "IN PROGRESS")
         JobStatus.COMPLETED -> Triple(Color(0xFFD1FAE5), Color(0xFF047857), "COMPLETED")
         JobStatus.INVOICED -> Triple(Color(0xFFF1F5F9), Color(0xFF334155), "INVOICED")
+        JobStatus.DRAFT -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), "DRAFT")
+        JobStatus.CANCELLED -> Triple(Color(0xFFFFE4E6), Color(0xFFE11D48), "CANCELLED")
+        else -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), status.displayName.uppercase())
     }
 
     Text(

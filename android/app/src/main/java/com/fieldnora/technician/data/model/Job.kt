@@ -4,15 +4,23 @@ import com.google.gson.annotations.SerializedName
 
 enum class JobStatus(val value: String, val displayName: String) {
     @SerializedName("scheduled") SCHEDULED("scheduled", "Scheduled"),
+    @SerializedName("assigned") ASSIGNED("assigned", "Assigned"),
+    @SerializedName("new") NEW("new", "New"),
     @SerializedName("en_route") EN_ROUTE("en_route", "En Route"),
     @SerializedName("on_site") ON_SITE("on_site", "On Site"),
     @SerializedName("in_progress") IN_PROGRESS("in_progress", "In Progress"),
     @SerializedName("completed") COMPLETED("completed", "Completed"),
-    @SerializedName("invoiced") INVOICED("invoiced", "Invoiced");
+    @SerializedName("invoiced") INVOICED("invoiced", "Invoiced"),
+    @SerializedName("draft") DRAFT("draft", "Draft"),
+    @SerializedName("cancelled") CANCELLED("cancelled", "Cancelled");
 
     companion object {
-        fun fromValue(value: String): JobStatus {
-            return entries.firstOrNull { it.value.equals(value, ignoreCase = true) } ?: SCHEDULED
+        fun fromValue(value: String?): JobStatus {
+            if (value.isNullOrBlank()) return SCHEDULED
+            val normalized = value.trim().lowercase()
+            return entries.firstOrNull { 
+                it.value.lowercase() == normalized || it.name.lowercase() == normalized 
+            } ?: SCHEDULED
         }
     }
 }
@@ -21,7 +29,18 @@ enum class JobPriority(val label: String) {
     @SerializedName("low") LOW("Low"),
     @SerializedName("medium") MEDIUM("Medium"),
     @SerializedName("high") HIGH("High"),
-    @SerializedName("emergency") EMERGENCY("Emergency")
+    @SerializedName("urgent") URGENT("Urgent"),
+    @SerializedName("emergency") EMERGENCY("Emergency");
+
+    companion object {
+        fun fromValue(value: String?): JobPriority {
+            if (value.isNullOrBlank()) return MEDIUM
+            val normalized = value.trim().lowercase()
+            return entries.firstOrNull { 
+                it.name.lowercase() == normalized || it.label.lowercase() == normalized 
+            } ?: MEDIUM
+        }
+    }
 }
 
 data class JobLineItem(
@@ -41,14 +60,20 @@ data class Job(
     @SerializedName("status") val status: JobStatus = JobStatus.SCHEDULED,
     @SerializedName("priority") val priority: JobPriority = JobPriority.MEDIUM,
     @SerializedName("customerId") val customerId: String = "",
-    @SerializedName("customer") val customer: Customer = Customer(),
+    @SerializedName("customer") val customer: Customer? = Customer(),
     @SerializedName("scheduledDate") val scheduledDate: String = "",
     @SerializedName("scheduledTime") val scheduledTime: String = "09:00",
     @SerializedName("estimatedDurationHours") val estimatedDurationHours: Double = 2.0,
     @SerializedName("totalAmountKes") val totalAmountKes: Double = 0.0,
-    @SerializedName("lineItems") val lineItems: List<JobLineItem> = emptyList(),
+    @SerializedName("lineItems") val lineItems: List<JobLineItem>? = emptyList(),
     @SerializedName("notes") val notes: String? = null,
     @SerializedName("signedBy") val signedBy: String? = null,
     @SerializedName("signedAt") val signedAt: String? = null,
     @SerializedName("isOfflineModified") val isOfflineModified: Boolean = false
-)
+) {
+    val safeCustomer: Customer
+        get() = customer ?: Customer()
+
+    val safeLineItems: List<JobLineItem>
+        get() = lineItems ?: emptyList()
+}

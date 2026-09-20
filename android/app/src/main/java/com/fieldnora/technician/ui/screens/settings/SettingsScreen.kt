@@ -100,6 +100,27 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
+                    if (serverUrl.contains("uip.railway.app")) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFFEF3C7))
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Typo detected ('uip' instead of 'up')", fontSize = 11.sp, color = Color(0xFF92400E))
+                            TextButton(
+                                onClick = { serverUrl = serverUrl.replace("uip.railway.app", "up.railway.app") },
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("Fix Typo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB45309))
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Quick URL Presets
@@ -130,7 +151,9 @@ fun SettingsScreen(
                     Button(
                         onClick = {
                             isTestingConnection = true
-                            RetrofitClient.rebuildWithBaseUrl(serverUrl, context)
+                            val cleaned = RetrofitClient.cleanUrl(serverUrl)
+                            serverUrl = cleaned
+                            RetrofitClient.rebuildWithBaseUrl(cleaned, context)
                             scope.launch {
                                 repository.refreshJobsFromNetwork()
                                 isTestingConnection = false
