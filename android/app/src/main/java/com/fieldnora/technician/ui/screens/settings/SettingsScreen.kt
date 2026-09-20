@@ -166,7 +166,7 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Native Android Build Spec", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Slate900)
-                    Text("• Language: Kotlin 1.9.23", style = MaterialTheme.typography.bodyMedium, color = Slate700)
+                    Text("• Language: Kotlin 1.9.24", style = MaterialTheme.typography.bodyMedium, color = Slate700)
                     Text("• UI Framework: Jetpack Compose + Material 3", style = MaterialTheme.typography.bodyMedium, color = Slate700)
                     Text("• Target SDK: Android 14 (API 34)", style = MaterialTheme.typography.bodyMedium, color = Slate700)
                     Text("• Package ID: com.fieldnora.technician", style = MaterialTheme.typography.bodyMedium, color = Slate700)

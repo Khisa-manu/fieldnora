@@ -6,7 +6,7 @@ This is the production-ready native Android application for **fieldnora**, built
 
 ## 📱 Tech Stack & Architecture
 
-- **Language:** Kotlin 1.9.23 (JVM Target 17)
+- **Language:** Kotlin 1.9.24 (JVM Target 17, Compose Compiler 1.5.14)
 - **UI Framework:** Jetpack Compose with Material 3 Design System
 - **Minimum SDK:** API 26 (Android 8.0 Oreo)
 - **Target SDK / Compile SDK:** API 34 (Android 14)

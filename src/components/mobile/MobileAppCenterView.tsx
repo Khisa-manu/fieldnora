@@ -172,12 +172,20 @@ android {
         versionName = "1.0.0"
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
+        )
+    }
+
     buildFeatures {
         compose = true
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = "1.5.14" // Compatible with Kotlin 1.9.24
     }
 }
 
@@ -398,7 +406,7 @@ Canvas(
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Kotlin 1.9.23 &amp; Compose 1.5.14</span>
+                  <span>Kotlin 1.9.24 &amp; Compose 1.5.14</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -780,7 +788,7 @@ Canvas(
 
                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
                       <span className="font-bold text-slate-900 block">Native App Spec</span>
-                      <div className="text-slate-500 text-[10px]">Language: Kotlin 1.9.23</div>
+                      <div className="text-slate-500 text-[10px]">Language: Kotlin 1.9.24</div>
                       <div className="text-slate-500 text-[10px]">UI Engine: Jetpack Compose (Material 3)</div>
                       <div className="text-slate-500 text-[10px]">Target SDK: Android 14 (API 34)</div>
                     </div>
