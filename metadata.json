@@ -1,6 +1,6 @@
 {
-  "name": "fieldnora",
-  "description": "Kenya & Africa Field-Service Management SaaS for plumbing, electrical, HVAC, cleaning, security, appliance repair, and mobile service businesses.",
+  "name": "Fieldnora",
+  "description": "Field Service. Done Right. Kenya & Africa Field-Service Operations Center for dispatch, jobs, technician tracking, and payments.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -27,9 +27,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Unique fieldnora emblem: field location polygon + teal pulse + task completion nexus */}
+      {/* Unique Fieldnora emblem */}
       <div
-        className={`${iconSizes[size]} relative flex items-center justify-center rounded-xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] shadow-md border border-slate-700/60 p-1.5 flex-shrink-0 group`}
+        className={`${iconSizes[size]} relative flex items-center justify-center rounded-xl bg-[#111A24] border border-[#1E293B] p-1.5 flex-shrink-0 group shadow-sm`}
       >
         <svg
           viewBox="0 0 40 40"
@@ -37,53 +37,38 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full transform transition-transform group-hover:scale-105"
         >
-          {/* Outer radar/location pulse ring */}
-          <circle
-            cx="20"
-            cy="20"
-            r="16"
+          {/* Hexagonal polygon emblem with teal accent */}
+          <polygon
+            points="20,4 34,12 34,28 20,36 6,28 6,12"
+            fill="#0D2E2B"
             stroke="#14B8A6"
             strokeWidth="2"
-            strokeDasharray="4 2"
-            className="opacity-70"
           />
-          {/* Compass / field sector */}
+          {/* Internal nexus / pin / rotor */}
           <path
-            d="M20 6 L25 18 L34 20 L24 25 L20 34 L16 25 L6 20 L15 18 Z"
+            d="M20 10 L28 24 L12 24 Z"
             fill="#14B8A6"
-            fillOpacity="0.2"
-            stroke="#38BDF8"
+            fillOpacity="0.4"
+            stroke="#2DD4BF"
             strokeWidth="1.5"
             strokeLinejoin="round"
           />
-          {/* Center pinpoint */}
-          <circle cx="20" cy="20" r="4.5" fill="#14B8A6" />
-          {/* Completion check mark in white */}
-          <path
-            d="M17.5 20.2 L19.2 21.8 L23 18"
-            stroke="#FFFFFF"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <circle cx="20" cy="20" r="4" fill="#14B8A6" />
+          <circle cx="20" cy="20" r="1.5" fill="#FFFFFF" />
         </svg>
       </div>
 
       {showText && (
         <div className="flex flex-col leading-none">
           <span
-            className={`font-extrabold tracking-tight ${
-              variant === 'light' ? 'text-white' : 'text-[#0F172A]'
-            } ${textSizes[size]}`}
+            className={`font-bold tracking-tight text-white ${textSizes[size]}`}
           >
-            field<span className="text-[#14B8A6]">nora</span>
+            Fieldnora
           </span>
           <span
-            className={`text-[10px] font-semibold tracking-wider uppercase ${
-              variant === 'light' ? 'text-slate-400' : 'text-[#64748B]'
-            } mt-0.5`}
+            className="text-[11px] font-normal tracking-normal text-slate-400 mt-0.5"
           >
-            Field Operations
+            Field Service Software
           </span>
         </div>
       )}

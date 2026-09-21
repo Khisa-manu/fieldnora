@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { NotificationDrawer } from './components/common/NotificationDrawer';
 import { AuthModal } from './components/auth/AuthModal';
+import { NewWorkOrderModal } from './components/jobs/NewWorkOrderModal';
 
 // Views
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -26,7 +27,8 @@ import { MobileAppCenterView } from './components/mobile/MobileAppCenterView';
 
 const MainLayout: React.FC = () => {
   const { activeTab } = useApp();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -68,24 +70,34 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#F8FAFC] text-[#0F172A] overflow-hidden antialiased font-sans">
+    <div className="flex h-screen w-full bg-[#0B1118] text-[#F1F5F9] overflow-hidden antialiased font-sans">
       {/* Sidebar Navigation */}
-      <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#0B1118]">
         {/* Top App Header */}
         <Header onToggleMobileSidebar={() => setMobileOpen(prev => !prev)} />
 
         {/* Scrollable View Area */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="max-w-7xl mx-auto w-full">
+        <main
+          className={`flex-1 overflow-y-auto ${
+            activeTab === 'dispatch' || activeTab === 'map' ? 'p-0 sm:p-2 lg:p-4' : 'px-4 sm:px-6 lg:px-8 py-6'
+          } bg-[#0B1118]`}
+        >
+          <div className={activeTab === 'dispatch' || activeTab === 'map' ? 'w-full h-full' : 'max-w-7xl mx-auto w-full'}>
             {renderActiveView()}
           </div>
         </main>
       </div>
 
       {/* Modals & Drawers */}
+      <NewWorkOrderModal />
       <GlobalSearchModal />
       <NotificationDrawer />
       <AuthModal />

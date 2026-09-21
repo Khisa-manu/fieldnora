@@ -40,11 +40,15 @@ interface AppContextType {
   unreadNotifCount: number;
   toasts: Toast[];
   isOnline: boolean;
+  newJobModalOpen: boolean;
+  selectedRegion: string;
   setActiveTab: (tab: ActiveTab) => void;
   setTechnicianViewMode: (mode: boolean) => void;
   setSearchModalOpen: (open: boolean) => void;
   setNotificationDrawerOpen: (open: boolean) => void;
   setAuthModalOpen: (open: boolean) => void;
+  setNewJobModalOpen: (open: boolean) => void;
+  setSelectedRegion: (region: string) => void;
   setUserRole: (role: UserRole) => void;
   switchOrganization: (orgId: string) => Promise<void>;
   createOrganization: (name: string, county: string) => Promise<void>;
@@ -68,6 +72,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isOnline] = useState<boolean>(true);
+  const [newJobModalOpen, setNewJobModalOpen] = useState<boolean>(false);
+  const [selectedRegion, setSelectedRegion] = useState<string>('Nairobi Westlands');
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = Math.random().toString(36).slice(2, 9);
@@ -166,11 +172,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         unreadNotifCount,
         toasts,
         isOnline,
+        newJobModalOpen,
+        selectedRegion,
         setActiveTab,
         setTechnicianViewMode,
         setSearchModalOpen,
         setNotificationDrawerOpen,
         setAuthModalOpen,
+        setNewJobModalOpen,
+        setSelectedRegion,
         setUserRole,
         switchOrganization,
         createOrganization,

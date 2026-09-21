@@ -1,37 +1,278 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { OperationsMap } from './OperationsMap';
 import {
-  Briefcase,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
+  ClipboardList,
   Banknote,
+  CreditCard,
   Users,
-  Wrench,
-  ArrowUpRight,
   MapPin,
-  Calendar,
-  ChevronRight,
+  MoreVertical,
+  ChevronDown,
+  CheckCircle2,
+  Clock,
+  Navigation,
+  Phone,
+  Eye,
+  ArrowRight,
   TrendingUp,
-  Activity,
-  Play,
-  Navigation
+  X,
+  ExternalLink
 } from 'lucide-react';
-import { Job, AuditLog, Technician } from '../../types';
+import { Job, Technician, JobPriority, JobStatus } from '../../types';
+
+interface WorkOrderItem {
+  jobNumber: string;
+  customerName: string;
+  trade: string;
+  status: 'en_route' | 'on_site' | 'in_progress' | 'scheduled' | 'completed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  timeAgo: string;
+  scheduledTime: string;
+  technicianName: string;
+  technicianCode: string;
+  techId: string;
+  lat: number;
+  lng: number;
+  locationName: string;
+}
 
 export const DashboardView: React.FC = () => {
-  const { setActiveTab, showToast, refreshAppData } = useApp();
+  const { setActiveTab, showToast, refreshAppData, setNewJobModalOpen } = useApp();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [activeMenuJob, setActiveMenuJob] = useState<string | null>(null);
+  const [detailModalJob, setDetailModalJob] = useState<WorkOrderItem | null>(null);
+  const [focusedCoords, setFocusedCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // The 14 Active Work Orders matching the screenshot PoL0f.jpg
+  const [workOrders, setWorkOrders] = useState<WorkOrderItem[]>([
+    {
+      jobNumber: 'WO-24568',
+      customerName: 'Britam Towers – Westlands',
+      trade: 'Office AC Repair',
+      status: 'en_route',
+      priority: 'medium',
+      timeAgo: '15:38 (22 min ago)',
+      scheduledTime: '15:38',
+      technicianName: 'John Mwangi',
+      technicianCode: 'Tech 07',
+      techId: 'tech-07',
+      lat: -1.2650,
+      lng: 36.8050,
+      locationName: 'Parklands & Westlands',
+    },
+    {
+      jobNumber: 'WO-24567',
+      customerName: 'Safaricom Care Centre',
+      trade: 'Generator Inspection',
+      status: 'on_site',
+      priority: 'high',
+      timeAgo: '15:21 (39 min ago)',
+      scheduledTime: '14:32',
+      technicianName: 'David Kiprotich',
+      technicianCode: 'Tech 03',
+      techId: 'tech-03',
+      lat: -1.3120,
+      lng: 36.8200,
+      locationName: 'Nairobi West',
+    },
+    {
+      jobNumber: 'WO-24566',
+      customerName: 'Garden City Mall',
+      trade: 'Electrical Fault',
+      status: 'in_progress',
+      priority: 'medium',
+      timeAgo: '14:57 (1 hr 3 min ago)',
+      scheduledTime: '14:57',
+      technicianName: 'Esther Wanjiku',
+      technicianCode: 'Tech 11',
+      techId: 'tech-11',
+      lat: -1.2250,
+      lng: 36.8850,
+      locationName: 'Kasarani / Thika Rd',
+    },
+    {
+      jobNumber: 'WO-24565',
+      customerName: 'Delta Towers – Westlands',
+      trade: 'Plumbing Leak',
+      status: 'en_route',
+      priority: 'low',
+      timeAgo: '14:32 (1 hr 28 min ago)',
+      scheduledTime: '14:32',
+      technicianName: 'Michael Otieno',
+      technicianCode: 'Tech 02',
+      techId: 'tech-02',
+      lat: -1.2640,
+      lng: 36.8010,
+      locationName: 'Westlands Commercial',
+    },
+    {
+      jobNumber: 'WO-24564',
+      customerName: 'Kitisuru Neighbourhood',
+      trade: 'Water Heater Repair',
+      status: 'in_progress',
+      priority: 'high',
+      timeAgo: '14:10 (1 hr 50 min ago)',
+      scheduledTime: '14:30',
+      technicianName: 'Peter Ndung\'u',
+      technicianCode: 'Tech 08',
+      techId: 'tech-08',
+      lat: -1.2400,
+      lng: 36.7650,
+      locationName: 'Kitisuru Estate',
+    },
+    {
+      jobNumber: 'WO-24563',
+      customerName: 'Westgate Shopping Centre',
+      trade: 'Fire Alarm Check',
+      status: 'en_route',
+      priority: 'low',
+      timeAgo: '13:45 (2 hr 15 min ago)',
+      scheduledTime: '14:35',
+      technicianName: 'Alex Kamau',
+      technicianCode: 'Tech 05',
+      techId: 'tech-05',
+      lat: -1.2620,
+      lng: 36.8020,
+      locationName: 'Westlands / Mwanzi Rd',
+    },
+    {
+      jobNumber: 'WO-24562',
+      customerName: 'Two Rivers Mall',
+      trade: 'Chiller Plant Overhaul',
+      status: 'in_progress',
+      priority: 'high',
+      timeAgo: '13:15 (2 hr 45 min ago)',
+      scheduledTime: '13:30',
+      technicianName: 'Brian Kiprop',
+      technicianCode: 'Tech 01',
+      techId: 'tech-01',
+      lat: -1.2150,
+      lng: 36.8020,
+      locationName: 'Limuru Rd / Ruaka',
+    },
+    {
+      jobNumber: 'WO-24561',
+      customerName: 'Kilimani Crest Apartments',
+      trade: 'Borehole Booster Pump',
+      status: 'on_site',
+      priority: 'urgent',
+      timeAgo: '12:40 (3 hr 20 min ago)',
+      scheduledTime: '12:45',
+      technicianName: 'Samuel Chege',
+      technicianCode: 'Tech 04',
+      techId: 'tech-04',
+      lat: -1.2915,
+      lng: 36.7892,
+      locationName: 'Kilimani',
+    },
+    {
+      jobNumber: 'WO-24560',
+      customerName: 'Nairobi Java Upper Hill',
+      trade: 'Commercial Kitchen Hood',
+      status: 'en_route',
+      priority: 'medium',
+      timeAgo: '12:10 (3 hr 50 min ago)',
+      scheduledTime: '12:15',
+      technicianName: 'Dennis Mutua',
+      technicianCode: 'Tech 06',
+      techId: 'tech-06',
+      lat: -1.2950,
+      lng: 36.8150,
+      locationName: 'Upper Hill',
+    },
+    {
+      jobNumber: 'WO-24559',
+      customerName: 'Village Market',
+      trade: 'Cold Room Compressor',
+      status: 'in_progress',
+      priority: 'high',
+      timeAgo: '11:30 (4 hr 30 min ago)',
+      scheduledTime: '11:30',
+      technicianName: 'Faith Ndwiga',
+      technicianCode: 'Tech 09',
+      techId: 'tech-09',
+      lat: -1.2280,
+      lng: 36.8050,
+      locationName: 'Gigiri',
+    },
+    {
+      jobNumber: 'WO-24558',
+      customerName: 'Yaya Centre',
+      trade: 'Main Distribution Board Scan',
+      status: 'on_site',
+      priority: 'low',
+      timeAgo: '11:00 (5 hr ago)',
+      scheduledTime: '11:00',
+      technicianName: 'Kevin Ochieng',
+      technicianCode: 'Tech 10',
+      techId: 'tech-10',
+      lat: -1.2920,
+      lng: 36.7880,
+      locationName: 'Kilimani / Argwings Kodhek',
+    },
+    {
+      jobNumber: 'WO-24557',
+      customerName: 'Karen Country Club',
+      trade: 'Solar Water Heater Circuit',
+      status: 'en_route',
+      priority: 'medium',
+      timeAgo: '10:15 (5 hr 45 min ago)',
+      scheduledTime: '10:30',
+      technicianName: 'John Mwangi',
+      technicianCode: 'Tech 07',
+      techId: 'tech-07',
+      lat: -1.3195,
+      lng: 36.7062,
+      locationName: 'Karen',
+    },
+    {
+      jobNumber: 'WO-24556',
+      customerName: 'Sarit Centre Westlands',
+      trade: 'Hydraulic Freight Lift Check',
+      status: 'scheduled',
+      priority: 'medium',
+      timeAgo: '09:30 (6 hr 30 min ago)',
+      scheduledTime: '09:30',
+      technicianName: 'David Kiprotich',
+      technicianCode: 'Tech 03',
+      techId: 'tech-03',
+      lat: -1.2610,
+      lng: 36.8040,
+      locationName: 'Westlands',
+    },
+    {
+      jobNumber: 'WO-24555',
+      customerName: 'The Hub Karen',
+      trade: 'Emergency Backup Inverter',
+      status: 'scheduled',
+      priority: 'high',
+      timeAgo: '08:45 (7 hr 15 min ago)',
+      scheduledTime: '08:45',
+      technicianName: 'Michael Otieno',
+      technicianCode: 'Tech 02',
+      techId: 'tech-02',
+      lat: -1.3180,
+      lng: 36.7120,
+      locationName: 'Karen',
+    },
+  ]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await api.getDashboard();
-      setStats(data);
-      const techs = await api.getTechnicians();
+      const [dash, techs] = await Promise.all([
+        api.getDashboard(),
+        api.getTechnicians(),
+      ]);
+      setStats(dash);
       setTechnicians(techs);
     } catch (err) {
       console.error(err);
@@ -44,399 +285,489 @@ export const DashboardView: React.FC = () => {
     loadData();
   }, []);
 
-  const handleQuickJobStatus = async (jobId: string, newStatus: Job['status']) => {
-    try {
-      await api.updateJob(jobId, { status: newStatus });
-      showToast(`Job updated to ${newStatus.replace('_', ' ').toUpperCase()}`, 'success');
-      await loadData();
-      await refreshAppData();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update job', 'error');
+  const handleUpdateStatus = (jobNum: string, newStatus: WorkOrderItem['status']) => {
+    setWorkOrders(prev =>
+      prev.map(j => (j.jobNumber === jobNum ? { ...j, status: newStatus } : j))
+    );
+    showToast(`Work Order ${jobNum} updated to ${newStatus.replace('_', ' ').toUpperCase()}`, 'success');
+    setActiveMenuJob(null);
+  };
+
+  const handlePinOnMap = (job: WorkOrderItem) => {
+    setSelectedTechId(job.techId);
+    setFocusedCoords({ lat: job.lat, lng: job.lng });
+    showToast(`Focusing map on ${job.technicianCode} (${job.customerName})`, 'info');
+    // Scroll smoothly to the map if table is far down
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Filtered & Paginated Work Orders
+  const filteredOrders = workOrders.filter(order => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'en_route') return order.status === 'en_route';
+    if (statusFilter === 'on_site') return order.status === 'on_site';
+    if (statusFilter === 'in_progress') return order.status === 'in_progress';
+    if (statusFilter === 'high') return order.priority === 'high' || order.priority === 'urgent';
+    if (statusFilter === 'medium') return order.priority === 'medium';
+    if (statusFilter === 'low') return order.priority === 'low';
+    return true;
+  });
+
+  const pageSize = 6;
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const getStatusBadge = (status: WorkOrderItem['status']) => {
+    switch (status) {
+      case 'en_route':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#0E1E36] text-[#60A5FA] border border-blue-900/50">
+            en route
+          </span>
+        );
+      case 'on_site':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#2B1D06] text-[#FBBF24] border border-amber-900/50">
+            on site
+          </span>
+        );
+      case 'in_progress':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#082823] text-[#2DD4BF] border border-teal-900/50">
+            in progress
+          </span>
+        );
+      case 'scheduled':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#16202C] text-slate-300 border border-slate-700/50">
+            scheduled
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#0E281F] text-emerald-400 border border-emerald-900/50">
+            completed
+          </span>
+        );
     }
   };
 
-  if (loading || !stats) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-slate-500 font-medium">Loading live Kenyan operations dashboard...</span>
-        </div>
-      </div>
-    );
-  }
+  const getPriorityDot = (priority: WorkOrderItem['priority']) => {
+    switch (priority) {
+      case 'urgent':
+      case 'high':
+        return (
+          <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            <span className="capitalize">{priority}</span>
+          </span>
+        );
+      case 'medium':
+        return (
+          <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Medium</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Low</span>
+          </span>
+        );
+    }
+  };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner / Welcome & Quick Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-[#0F172A]">Operations Center</h1>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-teal-100 text-teal-800">
-              Live DB
-            </span>
-          </div>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Real-time field dispatch, job progression, and Kenyan payment flows.
-          </p>
+    <div className="space-y-6 pb-12 font-sans text-slate-100">
+      {/* ------------------------------------------------------------- */}
+      {/* TOP ROW: MAP (~68% width) + 4 METRIC CARDS (~32% width)        */}
+      {/* ------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        {/* Left Column: Interactive Operations Map (lg:col-span-8) */}
+        <div className="lg:col-span-8 flex flex-col">
+          <OperationsMap
+            selectedTechId={selectedTechId}
+            onSelectTech={id => setSelectedTechId(id)}
+            focusedCoordinates={focusedCoords}
+            className="flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[420px]"
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('dispatch')}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-colors"
-          >
-            <Calendar className="w-4 h-4 text-slate-600" />
-            Dispatch Board
-          </button>
-          <button
+        {/* Right Column: 4 KPI Metric Cards vertically stacked (lg:col-span-4) */}
+        <div className="lg:col-span-4 flex flex-col justify-between gap-3 sm:gap-3.5">
+          {/* Card 1: Today's Jobs */}
+          <div
             onClick={() => setActiveTab('jobs')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#14B8A6] hover:bg-[#0D9488] rounded-xl shadow-xs transition-colors"
+            className="bg-[#0E1620] p-4 sm:p-4.5 rounded-2xl border border-[#1E293B] hover:border-teal-700/60 transition-all cursor-pointer group shadow-sm flex items-center justify-between"
           >
-            <Briefcase className="w-4 h-4" />
-            + New Work Order
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Today's Jobs */}
-        <div
-          onClick={() => setActiveTab('jobs')}
-          className="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-teal-400/60 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold text-slate-600">Today&apos;s Jobs</span>
-            <div className="p-2 bg-teal-50 text-teal-600 rounded-lg group-hover:bg-teal-600 group-hover:text-white transition-colors">
-              <Calendar className="w-4 h-4" />
+            <div>
+              <span className="text-xs font-medium text-slate-400">Today&apos;s Jobs</span>
+              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">14</div>
+              <div className="text-xs text-slate-400 mt-0.5">6 Completed</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#092723] text-[#14B8A6] border border-teal-800/40 group-hover:scale-105 transition-transform">
+              <ClipboardList className="w-5 h-5 stroke-[2.2]" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-[#0F172A]">{stats.todayJobsCount}</span>
-            <span className="text-[11px] text-teal-600 font-medium">scheduled</span>
-          </div>
-          <div className="mt-2 text-[11px] text-slate-400">
-            {stats.inProgressJobsCount} in progress • {stats.completedJobsCount} completed
-          </div>
-        </div>
 
-        {/* Revenue Collected */}
-        <div
-          onClick={() => setActiveTab('payments')}
-          className="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-emerald-400/60 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold text-slate-600">Revenue (KES)</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-              <Banknote className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-[#0F172A]">
-              KES {stats.totalRevenue.toLocaleString()}
-            </span>
-          </div>
-          <div className="mt-2 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            M-Pesa & Bank Receipts
-          </div>
-        </div>
-
-        {/* Outstanding Invoices */}
-        <div
-          onClick={() => setActiveTab('invoices')}
-          className="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-amber-400/60 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold text-slate-600">Outstanding Balance</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-[#0F172A]">
-              KES {stats.outstandingPayments.toLocaleString()}
-            </span>
-          </div>
-          <div className="mt-2 text-[11px] text-amber-600 font-medium flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            {stats.overdueInvoicesCount} overdue invoices
-          </div>
-        </div>
-
-        {/* Active Technicians */}
-        <div
-          onClick={() => setActiveTab('map')}
-          className="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-sky-400/60 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold text-slate-600">Technicians in Field</span>
-            <div className="p-2 bg-sky-50 text-sky-600 rounded-lg group-hover:bg-sky-600 group-hover:text-white transition-colors">
-              <Wrench className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-[#0F172A]">{stats.activeTechniciansCount}</span>
-            <span className="text-[11px] text-slate-500">/ {stats.totalTechniciansCount} active</span>
-          </div>
-          <div className="mt-2 text-[11px] text-sky-600 font-medium flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            Nairobi GPS Tracking Active
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Today's Jobs Feed & Technician Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Today's Active Work Orders */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-4.5 h-4.5 text-teal-600" />
-              <h2 className="text-sm font-bold text-[#0F172A]">Today&apos;s Active Work Orders</h2>
-              <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                {stats.todayJobs.length} today
-              </span>
-            </div>
-            <button
-              onClick={() => setActiveTab('jobs')}
-              className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-0.5"
-            >
-              View All Jobs <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {stats.todayJobs.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl">
-              <p className="text-xs text-slate-500">No work orders scheduled specifically for today.</p>
-              <button
-                onClick={() => setActiveTab('jobs')}
-                className="mt-2 text-xs text-teal-600 font-semibold"
-              >
-                Schedule a job now
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {stats.todayJobs.map((job: Job) => {
-                const statusColors: Record<string, string> = {
-                  new: 'bg-slate-100 text-slate-700',
-                  scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-                  assigned: 'bg-purple-50 text-purple-700 border-purple-200',
-                  en_route: 'bg-sky-50 text-sky-700 border-sky-200 animate-pulse',
-                  on_site: 'bg-amber-50 text-amber-800 border-amber-200',
-                  in_progress: 'bg-teal-50 text-teal-800 border-teal-200',
-                  completed: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                  cancelled: 'bg-red-50 text-red-700 border-red-200',
-                };
-
-                return (
-                  <div
-                    key={job.id}
-                    className="p-4 rounded-xl border border-slate-200/90 hover:border-teal-300 transition-all bg-white"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">{job.jobNumber}</span>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
-                              statusColors[job.status] || 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            {job.status.replace('_', ' ')}
-                          </span>
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded uppercase ${
-                              job.priority === 'urgent'
-                                ? 'bg-red-100 text-red-800'
-                                : job.priority === 'high'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {job.priority}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-semibold text-[#0F172A] mt-1">{job.title}</h4>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded">
-                          {job.startTime} - {job.endTime}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 mt-2 line-clamp-2">{job.description}</p>
-
-                    {/* Action Bar */}
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span>
-                          Labour: <strong className="text-slate-800">{job.labour.length} items</strong>
-                        </span>
-                        <span>
-                          Materials: <strong className="text-slate-800">{job.materials.length} items</strong>
-                        </span>
-                        {job.customerSignature && (
-                          <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Signed
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick Status Shift buttons */}
-                      <div className="flex items-center gap-1.5">
-                        {job.status === 'scheduled' && (
-                          <button
-                            onClick={() => handleQuickJobStatus(job.id, 'en_route')}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition-colors"
-                          >
-                            <Navigation className="w-3 h-3" /> Mark En Route
-                          </button>
-                        )}
-                        {job.status === 'en_route' && (
-                          <button
-                            onClick={() => handleQuickJobStatus(job.id, 'on_site')}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors"
-                          >
-                            <MapPin className="w-3 h-3" /> Check In (On Site)
-                          </button>
-                        )}
-                        {(job.status === 'on_site' || job.status === 'assigned') && (
-                          <button
-                            onClick={() => handleQuickJobStatus(job.id, 'in_progress')}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
-                          >
-                            <Play className="w-3 h-3" /> Start Job
-                          </button>
-                        )}
-                        {job.status === 'in_progress' && (
-                          <button
-                            onClick={() => handleQuickJobStatus(job.id, 'completed')}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors"
-                          >
-                            <CheckCircle2 className="w-3 h-3" /> Complete Job
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setActiveTab('jobs')}
-                          className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
-                        >
-                          View Order
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Right Col: Live Field Technicians & Kenyan Activity Feed */}
-        <div className="space-y-6">
-          {/* Field Technicians Status */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-sky-600" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Technician Deployment</h3>
+          {/* Card 2: Revenue */}
+          <div
+            onClick={() => setActiveTab('payments')}
+            className="bg-[#0E1620] p-4 sm:p-4.5 rounded-2xl border border-[#1E293B] hover:border-amber-700/60 transition-all cursor-pointer group shadow-sm flex items-center justify-between"
+          >
+            <div>
+              <span className="text-xs font-medium text-slate-400">Revenue</span>
+              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">KES 287,400</div>
+              <div className="text-xs text-emerald-400 font-medium mt-0.5 flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>+12.4% vs yesterday</span>
               </div>
-              <button
-                onClick={() => setActiveTab('map')}
-                className="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-0.5"
-              >
-                Map <ArrowUpRight className="w-3 h-3" />
-              </button>
             </div>
+            <div className="p-3 rounded-xl bg-[#2A2007] text-[#F59E0B] border border-amber-800/40 group-hover:scale-105 transition-transform">
+              <Banknote className="w-5 h-5 stroke-[2.2]" />
+            </div>
+          </div>
 
-            <div className="space-y-2.5">
-              {technicians.map(tech => (
-                <div
-                  key={tech.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50/70 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
-                        {tech.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <span
-                        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                          tech.activeStatus === 'on_job'
-                            ? 'bg-amber-500'
-                            : tech.activeStatus === 'en_route'
-                            ? 'bg-sky-500 animate-ping'
-                            : tech.activeStatus === 'available'
-                            ? 'bg-emerald-500'
-                            : 'bg-slate-400'
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">{tech.name}</div>
-                      <div className="text-[10px] text-slate-500">{tech.vehicleReg} • {tech.specialization.split('&')[0]}</div>
-                    </div>
-                  </div>
+          {/* Card 3: Outstanding */}
+          <div
+            onClick={() => setActiveTab('invoices')}
+            className="bg-[#0E1620] p-4 sm:p-4.5 rounded-2xl border border-[#1E293B] hover:border-indigo-700/60 transition-all cursor-pointer group shadow-sm flex items-center justify-between"
+          >
+            <div>
+              <span className="text-xs font-medium text-slate-400">Outstanding</span>
+              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">KES 94,200</div>
+              <div className="text-xs text-slate-400 mt-0.5">12 Invoices</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#151B2E] text-[#818CF8] border border-indigo-800/40 group-hover:scale-105 transition-transform">
+              <CreditCard className="w-5 h-5 stroke-[2.2]" />
+            </div>
+          </div>
 
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                      tech.activeStatus === 'on_job'
-                        ? 'bg-amber-50 text-amber-800'
-                        : tech.activeStatus === 'en_route'
-                        ? 'bg-sky-50 text-sky-800'
-                        : tech.activeStatus === 'available'
-                        ? 'bg-emerald-50 text-emerald-800'
-                        : 'bg-slate-100 text-slate-600'
+          {/* Card 4: Techs Active */}
+          <div
+            onClick={() => setActiveTab('technician')}
+            className="bg-[#0E1620] p-4 sm:p-4.5 rounded-2xl border border-[#1E293B] hover:border-cyan-700/60 transition-all cursor-pointer group shadow-sm flex items-center justify-between"
+          >
+            <div>
+              <span className="text-xs font-medium text-slate-400">Techs Active</span>
+              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">8/11</div>
+              <div className="text-xs text-slate-400 mt-0.5">73% utilization</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#0B252E] text-[#06B6D4] border border-cyan-800/40 group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5 stroke-[2.2]" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* BOTTOM ROW: TODAY'S ACTIVE WORK ORDERS TABLE                   */}
+      {/* ------------------------------------------------------------- */}
+      <div className="bg-[#0E1620] border border-[#1E293B] rounded-2xl overflow-hidden shadow-sm">
+        {/* Table Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-[#1E293B]">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              Today&apos;s Active Work Orders
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#092723] text-[#14B8A6] border border-teal-800/50">
+              14
+            </span>
+          </div>
+
+          {/* Status Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setStatusFilterOpen(!statusFilterOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0B1118] hover:bg-[#16202C] border border-[#1E293B] text-xs font-medium text-slate-300 transition-colors"
+            >
+              <span className="capitalize">
+                {statusFilter === 'all'
+                  ? 'All Status'
+                  : statusFilter.replace('_', ' ')}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {statusFilterOpen && (
+              <div className="absolute right-0 mt-2 w-44 bg-[#111A24] border border-[#1E293B] rounded-xl shadow-2xl py-1 z-30 text-xs">
+                {[
+                  { id: 'all', label: 'All Status' },
+                  { id: 'en_route', label: 'En Route' },
+                  { id: 'on_site', label: 'On Site' },
+                  { id: 'in_progress', label: 'In Progress' },
+                  { id: 'high', label: 'High Priority' },
+                  { id: 'medium', label: 'Medium Priority' },
+                  { id: 'low', label: 'Low Priority' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setStatusFilter(opt.id);
+                      setStatusFilterOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-[#16202C] transition-colors ${
+                      statusFilter === opt.id
+                        ? 'text-[#14B8A6] font-semibold bg-[#16202C]/60'
+                        : 'text-slate-300'
                     }`}
                   >
-                    {tech.activeStatus.replace('_', ' ')}
-                  </span>
-                </div>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Work Orders Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-[#1E293B] bg-[#0B1118]/60 text-slate-400 text-[11px] font-semibold tracking-wider uppercase">
+                <th className="py-3 px-5">Job #</th>
+                <th className="py-3 px-5">Customer</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Priority</th>
+                <th className="py-3 px-4">Time</th>
+                <th className="py-3 px-4">Scheduled</th>
+                <th className="py-3 px-5">Technician</th>
+                <th className="py-3 px-5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1E293B]/60 text-slate-300 font-normal">
+              {paginatedOrders.map(order => (
+                <tr
+                  key={order.jobNumber}
+                  className="hover:bg-[#111A24] transition-colors group"
+                >
+                  {/* Job # */}
+                  <td className="py-3.5 px-5 font-mono font-semibold text-slate-200">
+                    <button
+                      onClick={() => setDetailModalJob(order)}
+                      className="hover:text-[#14B8A6] transition-colors text-left"
+                    >
+                      {order.jobNumber}
+                    </button>
+                  </td>
+
+                  {/* Customer & Trade */}
+                  <td className="py-3.5 px-5">
+                    <div className="font-semibold text-white truncate max-w-[200px]">
+                      {order.customerName}
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate max-w-[200px]">
+                      {order.trade}
+                    </div>
+                  </td>
+
+                  {/* Status Badge */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    {getStatusBadge(order.status)}
+                  </td>
+
+                  {/* Priority Dot */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    {getPriorityDot(order.priority)}
+                  </td>
+
+                  {/* Time + Ago */}
+                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-300 font-mono text-[11px]">
+                    {order.timeAgo}
+                  </td>
+
+                  {/* Scheduled Time */}
+                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-300 font-mono text-[11px]">
+                    {order.scheduledTime}
+                  </td>
+
+                  {/* Technician */}
+                  <td className="py-3.5 px-5 whitespace-nowrap">
+                    <div className="font-semibold text-slate-200">{order.technicianName}</div>
+                    <div className="text-[11px] text-slate-400 font-mono">{order.technicianCode}</div>
+                  </td>
+
+                  {/* Action Icons */}
+                  <td className="py-3.5 px-5 whitespace-nowrap text-right relative">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {/* Blue Map Location Pin button matching screenshot */}
+                      <button
+                        onClick={() => handlePinOnMap(order)}
+                        className="p-1.5 rounded-lg bg-[#0E1E36] hover:bg-[#152E54] text-[#60A5FA] border border-blue-900/60 transition-colors"
+                        title="Locate & Focus on Map"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* More Options Dropdown button */}
+                      <div className="relative">
+                        <button
+                          onClick={() =>
+                            setActiveMenuJob(
+                              activeMenuJob === order.jobNumber ? null : order.jobNumber
+                            )
+                          }
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#16202C] transition-colors"
+                          title="Actions"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+
+                        {activeMenuJob === order.jobNumber && (
+                          <div className="absolute right-0 mt-1 w-44 bg-[#111A24] border border-[#1E293B] rounded-xl shadow-2xl py-1 z-30 text-left text-xs">
+                            <button
+                              onClick={() => {
+                                setDetailModalJob(order);
+                                setActiveMenuJob(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 hover:bg-[#16202C] hover:text-white"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#14B8A6]" />
+                              <span>View Work Order</span>
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(order.jobNumber, 'on_site')}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 hover:bg-[#16202C] hover:text-amber-400"
+                            >
+                              <span className="w-2 h-2 rounded-full bg-amber-500" />
+                              <span>Mark On Site</span>
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(order.jobNumber, 'in_progress')}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 hover:bg-[#16202C] hover:text-teal-400"
+                            >
+                              <span className="w-2 h-2 rounded-full bg-teal-500" />
+                              <span>Mark In Progress</span>
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(order.jobNumber, 'completed')}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 hover:bg-[#16202C] hover:text-emerald-400"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>Complete Order</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table Footer with exact pagination matching PoL0f.jpg */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-6 py-4 border-t border-[#1E293B] bg-[#0B1118]/50 text-xs text-slate-400">
+          <div>
+            Showing <span className="font-semibold text-slate-200">{paginatedOrders.length}</span> of{' '}
+            <span className="font-semibold text-slate-200">{filteredOrders.length}</span> active work orders
           </div>
 
-          {/* Audit Activity Feed */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-slate-600" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Real-Time Audit Trail</h3>
-              </div>
+          <div className="flex items-center gap-1.5 self-end sm:self-auto font-medium">
+            {[1, 2, 3].map(page => (
               <button
-                onClick={() => setActiveTab('audit')}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors ${
+                  currentPage === page
+                    ? 'bg-[#14B8A6] text-white shadow-xs'
+                    : 'bg-[#111A24] text-slate-400 hover:text-white hover:bg-[#16202C] border border-[#1E293B]'
+                }`}
               >
-                All Logs
+                {page}
               </button>
-            </div>
-
-            <div className="space-y-3">
-              {stats.recentActivity.slice(0, 5).map((log: AuditLog) => (
-                <div key={log.id} className="flex items-start gap-2.5 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-slate-900">{log.userName}</span>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="text-slate-600 text-[11px] mt-0.5">
-                      <span className="font-mono text-[10px] text-teal-700 uppercase">{log.action}</span> on {log.entity}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* WORK ORDER INSPECTOR MODAL                                    */}
+      {/* ------------------------------------------------------------- */}
+      {detailModalJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-[#111A24] border border-[#1E293B] rounded-2xl p-5 shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+              <div>
+                <span className="font-mono text-[11px] text-[#14B8A6] font-bold">
+                  {detailModalJob.jobNumber}
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5">
+                  {detailModalJob.trade}
+                </h3>
+              </div>
+              <button
+                onClick={() => setDetailModalJob(null)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-slate-300">
+              <div className="bg-[#0B1118] p-3 rounded-xl border border-[#1E293B] space-y-1">
+                <div className="text-[11px] text-slate-400">Client / Building</div>
+                <div className="text-sm font-bold text-white">{detailModalJob.customerName}</div>
+                <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#14B8A6]" />
+                  <span>{detailModalJob.locationName}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#0B1118] p-2.5 rounded-xl border border-[#1E293B]">
+                  <div className="text-[10px] text-slate-400">Current Status</div>
+                  <div className="mt-1">{getStatusBadge(detailModalJob.status)}</div>
+                </div>
+                <div className="bg-[#0B1118] p-2.5 rounded-xl border border-[#1E293B]">
+                  <div className="text-[10px] text-slate-400">Priority</div>
+                  <div className="mt-1">{getPriorityDot(detailModalJob.priority)}</div>
+                </div>
+              </div>
+
+              <div className="bg-[#0B1118] p-3 rounded-xl border border-[#1E293B] flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] text-slate-400">Assigned Technician</div>
+                  <div className="font-semibold text-white">{detailModalJob.technicianName}</div>
+                  <div className="text-[10px] text-teal-400 font-mono">{detailModalJob.technicianCode}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    handlePinOnMap(detailModalJob);
+                    setDetailModalJob(null);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-[#0D2E2B] text-[#14B8A6] border border-teal-800/40 hover:bg-[#14B8A6] hover:text-white transition-colors flex items-center gap-1.5 font-semibold"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Map Pin</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-[#1E293B]">
+              <button
+                onClick={() => {
+                  handleUpdateStatus(detailModalJob.jobNumber, 'completed');
+                  setDetailModalJob(null);
+                }}
+                className="flex-1 py-2 rounded-lg bg-[#0D9488] hover:bg-[#14B8A6] text-white font-semibold text-center transition-colors"
+              >
+                Mark Job Complete
+              </button>
+              <button
+                onClick={() => setDetailModalJob(null)}
+                className="px-4 py-2 rounded-lg bg-[#16202C] text-slate-300 font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

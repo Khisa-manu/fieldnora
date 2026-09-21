@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { BrandLogo } from './BrandLogo';
 import {
   Search,
   Bell,
+  MapPin,
   ChevronDown,
-  Building2,
   Plus,
   ShieldCheck,
   UserCheck,
   Wrench,
   Calculator,
   Eye,
-  Wifi,
-  Menu
+  Menu,
+  Building2,
+  Calendar,
+  HelpCircle,
+  Cloud
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -28,159 +30,253 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
     userRole,
     setUserRole,
     activeTab,
-    setActiveTab,
-    switchOrganization,
     unreadNotifCount,
     setSearchModalOpen,
     setNotificationDrawerOpen,
-    createOrganization,
-    showToast,
+    setNewJobModalOpen,
+    selectedRegion,
+    setSelectedRegion,
+    switchOrganization,
   } = useApp();
 
-  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [newOrgModal, setNewOrgModal] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [newOrgCounty, setNewOrgCounty] = useState('Nairobi');
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [eatTime, setEatTime] = useState<string>('');
 
-  const roleLabels: Record<UserRole, { label: string; icon: React.ReactNode; color: string }> = {
-    admin: { label: 'Admin', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'bg-indigo-100 text-indigo-800' },
-    dispatcher: { label: 'Dispatcher', icon: <UserCheck className="w-3.5 h-3.5" />, color: 'bg-blue-100 text-blue-800' },
-    technician: { label: 'Technician', icon: <Wrench className="w-3.5 h-3.5" />, color: 'bg-teal-100 text-teal-800' },
-    accountant: { label: 'Accountant', icon: <Calculator className="w-3.5 h-3.5" />, color: 'bg-emerald-100 text-emerald-800' },
-    readonly: { label: 'Read-Only', icon: <Eye className="w-3.5 h-3.5" />, color: 'bg-slate-100 text-slate-800' },
+  // Live EAT (East Africa Time: UTC+3) Clock matching screenshot: "• EAT 15:42"
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      // Format as 24-hour EAT time (UTC+3)
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'Africa/Nairobi',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      };
+      const formatted = new Intl.DateTimeFormat('en-GB', options).format(now);
+      setEatTime(`EAT ${formatted}`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const availableRegions = [
+    'Nairobi Westlands',
+    'Kilimani & Kileleshwa',
+    'Upper Hill & CBD',
+    'Industrial Area & South C',
+    'Karen & Langata',
+    'Thika Road & Kasarani',
+    'All Nairobi Fleet',
+  ];
+
+  const roleLabels: Record<UserRole, { label: string; icon: React.ReactNode }> = {
+    admin: { label: 'Admin', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    dispatcher: { label: 'Dispatcher', icon: <UserCheck className="w-3.5 h-3.5" /> },
+    technician: { label: 'Technician', icon: <Wrench className="w-3.5 h-3.5" /> },
+    accountant: { label: 'Accountant', icon: <Calculator className="w-3.5 h-3.5" /> },
+    readonly: { label: 'Observer', icon: <Eye className="w-3.5 h-3.5" /> },
   };
 
-  const handleCreateOrg = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newOrgName.trim()) return;
-    await createOrganization(newOrgName, newOrgCounty);
-    setNewOrgModal(false);
-    setNewOrgName('');
+  const getPageTitle = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return 'Operations Center';
+      case 'dispatch':
+        return 'Dispatch Board';
+      case 'jobs':
+        return 'Jobs & Work Orders';
+      case 'map':
+        return 'Fleet GPS Telemetry';
+      case 'technician':
+        return 'Technicians & Field Force';
+      case 'invoices':
+        return 'Invoices & Billing';
+      case 'customers':
+        return 'Customer CRM';
+      case 'estimates':
+        return 'Estimates & Quotes';
+      case 'inventory':
+        return 'Parts & Inventory';
+      case 'forms':
+        return 'Forms & Checklists';
+      case 'reports':
+        return 'Analytics & Reports';
+      default:
+        return 'Operations Center';
+    }
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-6 bg-white border-b border-slate-200/80 shadow-xs">
-      {/* Left side: Hamburger & Workspace Selector */}
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 sm:px-6 lg:px-8 bg-[#0B1118] border-b border-[#1E293B]/70 shadow-sm">
+      {/* Left side: Hamburger & Title */}
+      <div className="flex items-center gap-3.5">
         <button
           id="mobile-menu-toggle"
           onClick={onToggleMobileSidebar}
-          className="p-2 -ml-1 text-slate-600 rounded-lg hover:bg-slate-100 lg:hidden"
+          className="p-2 -ml-1 text-slate-400 hover:text-white rounded-lg hover:bg-[#16202C] lg:hidden"
           title="Toggle Navigation"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Workspace Switcher */}
-        <div className="relative">
-          <button
-            id="workspace-switcher-btn"
-            onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-100 transition-colors text-left"
-          >
-            <div className="flex items-center justify-center w-7 h-7 rounded-md bg-[#0F172A] text-white">
-              <Building2 className="w-4 h-4 text-[#14B8A6]" />
-            </div>
-            <div className="hidden sm:block">
-              <div className="text-xs font-semibold text-[#0F172A] truncate max-w-[180px]">
-                {currentOrg?.name || 'fieldnora Workspace'}
-              </div>
-              <div className="text-[10px] text-[#64748B]">
-                {currentOrg?.county || 'HQ'} • KES (16% VAT)
-              </div>
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-          </button>
-
-          {/* Org Dropdown */}
-          {orgDropdownOpen && (
-            <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
-              <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                Workspaces (Multi-Tenant)
-              </div>
-              {organizations.map(org => (
-                <button
-                  key={org.id}
-                  onClick={() => {
-                    switchOrganization(org.id);
-                    setOrgDropdownOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${
-                    org.id === currentOrg?.id ? 'bg-teal-50/70 text-teal-900 font-semibold' : 'text-slate-700'
-                  }`}
-                >
-                  <div className="truncate">
-                    <div className="font-medium text-xs">{org.name}</div>
-                    <div className="text-[10px] text-slate-400">{org.county}</div>
-                  </div>
-                  {org.id === currentOrg?.id && (
-                    <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-medium">
-                      Active
-                    </span>
-                  )}
-                </button>
-              ))}
-
-              <div className="border-t border-slate-100 mt-1 pt-1">
-                <button
-                  onClick={() => {
-                    setOrgDropdownOpen(false);
-                    setNewOrgModal(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Create New Workspace
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Middle: Global Search Bar */}
-      <div className="flex-1 max-w-md mx-4 hidden md:block">
-        <button
-          id="global-search-btn"
-          onClick={() => setSearchModalOpen(true)}
-          className="w-full flex items-center justify-between px-3.5 py-2 text-xs text-slate-400 bg-slate-100/80 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-all cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-slate-400" />
-            <span>Search jobs, customers, technicians, invoices, parts...</span>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              {activeTab === 'map' ? 'Live Operations' : activeTab === 'dispatch' ? 'Dispatch Board' : getPageTitle()}
+            </h1>
+            {activeTab === 'map' && (
+              <p className="text-xs text-slate-400 font-medium leading-none mt-0.5">Nairobi Metro</p>
+            )}
           </div>
-          <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-300 rounded text-slate-500 shadow-2xs">
-            ⌘K
-          </kbd>
-        </button>
+          {activeTab === 'dispatch' ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#14B8A6] bg-[#0E2A27] border border-[#14B8A6]/40">
+              <span className="w-2 h-2 rounded-full bg-[#14B8A6] animate-pulse" />
+              <span>Live</span>
+            </span>
+          ) : activeTab === 'dashboard' ? (
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-teal-950/70 text-[#14B8A6] border border-teal-800/40">
+              Live Operations
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Right Side: Tools, Role Switcher, Mobile Mode, Notifications */}
-      <div className="flex items-center gap-2.5">
-        {/* System Online Status */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200/60">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span>System Online</span>
-        </div>
+      {/* Right side controls matching screenshot */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {activeTab === 'map' ? (
+          <>
+            {/* Weather Widget matching screenshot: ☁️ 24°C Partly Cloudy */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111A24] border border-[#1E293B] text-xs font-medium text-slate-200 shadow-2xs">
+              <Cloud className="w-4 h-4 text-slate-300" />
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-semibold text-white">24°C</span>
+                <span className="text-slate-400 text-[11px]">Partly Cloudy</span>
+              </div>
+            </div>
 
-        {/* Role Switcher */}
-        <div className="relative">
+            {/* Notifications with blue dot indicator */}
+            <button
+              onClick={() => setNotificationDrawerOpen(true)}
+              className="relative p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#3B82F6] rounded-full ring-2 ring-[#0B1118]" />
+            </button>
+
+            {/* Dispatcher • Kenya / John Mwangi Profile matching screenshot mrrdB.jpg */}
+            <div className="flex items-center gap-2.5 pl-1 cursor-pointer group">
+              <div className="hidden sm:flex flex-col text-right">
+                <span className="text-[11px] text-slate-400 leading-tight">
+                  Dispatcher • Kenya
+                </span>
+                <span className="text-xs font-semibold text-white leading-tight group-hover:text-[#14B8A6] transition-colors">
+                  John Mwangi
+                </span>
+              </div>
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80"
+                alt="John Mwangi"
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] transition-all"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Date Selector Pill */}
+            <div className="relative">
+              <button
+                onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111A24] hover:bg-[#16202C] border border-[#1E293B] text-xs font-medium text-slate-200 transition-colors shadow-2xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Today</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Notifications Trigger with badge '3' */}
+            <button
+              onClick={() => setNotificationDrawerOpen(true)}
+              className="relative p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#14B8A6] text-black text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-[#0B1118]">
+                3
+              </span>
+            </button>
+
+            {/* Help icon button '?' */}
+            <button
+              onClick={() => {
+                alert('Fieldnora Dispatch Operations Center\n\n• Drag and drop work orders between columns\n• Click any card to inspect and update details\n• View live technician GPS status on the right panel\n• Fast search across jobs and field technicians');
+              }}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors"
+              title="Dispatch Guide & Shortcuts"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
+            {/* User Profile Badge */}
+            <div
+              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+              className="flex items-center gap-2.5 pl-1 cursor-pointer group"
+              title="Operations Admin Settings"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80"
+                alt="Daniel K."
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] transition-all"
+              />
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-xs font-semibold text-white leading-tight group-hover:text-[#14B8A6] transition-colors">
+                  Daniel K.
+                </span>
+                <span className="text-[11px] text-slate-400 leading-tight">
+                  Operations Admin
+                </span>
+              </div>
+            </div>
+
+            {/* Fast '+ New Work Order' action */}
+            {activeTab !== 'dispatch' && (
+              <button
+                id="header-new-work-order-btn"
+                onClick={() => setNewJobModalOpen(true)}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0D9488] hover:bg-[#14B8A6] text-white text-xs font-semibold transition-all shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>New Work Order</span>
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Role Switcher Pill */}
+        <div className="relative hidden xl:block">
           <button
-            id="role-switcher-btn"
-            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 transition-colors ${roleLabels[userRole].color}`}
-            title="Switch User Role & Permissions"
+            onClick={() => {
+              setRoleDropdownOpen(!roleDropdownOpen);
+              setRegionDropdownOpen(false);
+              setOrgDropdownOpen(false);
+            }}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#111A24] border border-[#1E293B]/70 text-xs font-medium text-slate-300 hover:bg-[#16202C] transition-colors"
           >
-            {roleLabels[userRole].icon}
-            <span>{roleLabels[userRole].label}</span>
-            <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+            <span className="text-[#14B8A6]">{roleLabels[userRole]?.icon}</span>
+            <span className="capitalize">{roleLabels[userRole]?.label}</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
 
           {roleDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50">
-              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Switch Role / RBAC
+            <div className="absolute right-0 mt-2 w-48 bg-[#111A24] border border-[#1E293B] rounded-xl shadow-2xl py-1 z-50 text-xs">
+              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#1E293B]/70">
+                Simulate Workspace Role
               </div>
               {(Object.keys(roleLabels) as UserRole[]).map(r => (
                 <button
@@ -189,96 +285,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
                     setUserRole(r);
                     setRoleDropdownOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors ${
-                    userRole === r ? 'font-bold text-[#14B8A6]' : 'text-slate-700'
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#16202C] transition-colors ${
+                    userRole === r ? 'text-[#14B8A6] font-semibold bg-[#16202C]/60' : 'text-slate-300'
                   }`}
                 >
-                  {roleLabels[r].icon}
-                  {roleLabels[r].label}
+                  <span>{roleLabels[r].icon}</span>
+                  <span>{roleLabels[r].label}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
-
-        {/* Notification Bell */}
-        <button
-          id="notification-bell-btn"
-          onClick={() => setNotificationDrawerOpen(true)}
-          className="relative p-2 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-          title="Notifications & System Alerts"
-        >
-          <Bell className="w-4.5 h-4.5" />
-          {unreadNotifCount > 0 && (
-            <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-red-500 rounded-full">
-              {unreadNotifCount}
-            </span>
-          )}
-        </button>
       </div>
-
-      {/* New Workspace Modal */}
-      {newOrgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-[#0F172A] mb-1">Create Multi-Tenant Workspace</h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Provision an isolated organization with its own customers, technicians, inventory, and invoices.
-            </p>
-            <form onSubmit={handleCreateOrg} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Business / Company Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Mombasa Coastal Air Conditioning Ltd"
-                  value={newOrgName}
-                  onChange={e => setNewOrgName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#14B8A6] focus:border-transparent outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  County / Region (Kenya)
-                </label>
-                <select
-                  value={newOrgCounty}
-                  onChange={e => setNewOrgCounty(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#14B8A6] focus:border-transparent outline-hidden"
-                >
-                  <option value="Nairobi">Nairobi County</option>
-                  <option value="Mombasa">Mombasa County</option>
-                  <option value="Kiambu">Kiambu County</option>
-                  <option value="Machakos">Machakos County</option>
-                  <option value="Nakuru">Nakuru County</option>
-                  <option value="Kisumu">Kisumu County</option>
-                  <option value="Uasin Gishu">Uasin Gishu (Eldoret)</option>
-                  <option value="Kajiado">Kajiado County</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setNewOrgModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#14B8A6] hover:bg-[#0D9488] rounded-lg shadow-xs"
-                >
-                  Create & Launch Workspace
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
