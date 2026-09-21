@@ -33,9 +33,11 @@ import {
 } from 'lucide-react';
 import { Job, Customer, Technician, ProductInventory } from '../../types';
 import { SignaturePad } from '../common/SignaturePad';
+import { MobileApkTodayJobsView } from '../mobile/MobileApkTodayJobsView';
 
 export const TechnicianMobileView: React.FC = () => {
   const { showToast, setTechnicianViewMode } = useApp();
+  const [viewStyle, setViewStyle] = useState<'today_dashboard' | 'legacy_flow'>('today_dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -431,6 +433,42 @@ export const TechnicianMobileView: React.FC = () => {
 
   const jobCustomer = customers.find(c => c.id === selectedJob?.customerId);
 
+  if (viewStyle === 'today_dashboard') {
+    return (
+      <div className="space-y-4">
+        {/* View Switcher Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700">Mobile View Interface:</span>
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs">
+              <button
+                onClick={() => setViewStyle('today_dashboard')}
+                className="px-3 py-1 rounded-lg font-bold bg-[#0F1722] text-[#14B8A6] shadow-xs flex items-center gap-1.5"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Today's Jobs Dashboard (Mobile APK)</span>
+              </button>
+              <button
+                onClick={() => setViewStyle('legacy_flow')}
+                className="px-3 py-1 rounded-lg font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1.5"
+              >
+                <Boxes className="w-3.5 h-3.5" />
+                <span>Field Flow & Van Inventory</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-500 font-medium">
+            Active Technician: <span className="font-bold text-slate-800">John Mwangi</span> (Nairobi Lead)
+          </div>
+        </div>
+
+        {/* The Exact Pixel-Perfect Mobile APK Today's Jobs Dashboard */}
+        <MobileApkTodayJobsView />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner with Frame Mode Switcher */}
@@ -449,6 +487,15 @@ export const TechnicianMobileView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Switch back to APK dashboard */}
+          <button
+            onClick={() => setViewStyle('today_dashboard')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-teal-600" />
+            <span>Switch to APK Today's Dashboard</span>
+          </button>
+
           {/* Active Tech Selector */}
           <select
             value={activeTechId}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { MobileApkTodayJobsView } from './MobileApkTodayJobsView';
 import {
   Smartphone,
   Download,
@@ -25,7 +26,8 @@ import {
 export const MobileAppCenterView: React.FC = () => {
   const { showToast } = useApp();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [activeCodeTab, setActiveCodeTab] = useState<'main_activity' | 'build_gradle' | 'job_detail' | 'signature_screen' | 'android_manifest'>('main_activity');
+  const [activeCodeTab, setActiveCodeTab] = useState<'home_dashboard' | 'main_activity' | 'build_gradle' | 'job_detail' | 'signature_screen' | 'android_manifest'>('home_dashboard');
+  const [simulatorViewMode, setSimulatorViewMode] = useState<'today_dashboard' | 'intent_tester'>('today_dashboard');
 
   // Live Backend & Mobile Communication Test State
   const [connectivityStatus, setConnectivityStatus] = useState<'idle' | 'testing' | 'connected' | 'error'>('idle');
@@ -125,6 +127,95 @@ export const MobileAppCenterView: React.FC = () => {
   };
 
   const codeSnippets = {
+    home_dashboard: `// ui/screens/TodayDashboardScreen.kt
+// Jetpack Compose implementation for Fieldnora Android APK
+package com.fieldnora.technician.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.fieldnora.technician.domain.model.Job
+
+@Composable
+fun TodayDashboardScreen(
+    dateText: String = "24 May 2025",
+    activeCount: Int = 3,
+    enRouteCount: Int = 1,
+    completedCount: Int = 2,
+    todayJobs: List<Job>,
+    onNavigate: (Job) -> Unit,
+    onCall: (String) -> Unit,
+    onWhatsApp: (Job) -> Unit,
+    onJobClick: (Job) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TodayAppHeader(dateText = dateText)
+        },
+        bottomBar = {
+            FieldnoraBottomNavBar(selectedTab = "home")
+        },
+        containerColor = Color(0xFF080D14)
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // 3 Metrics Cards (Active Jobs, En Route, Completed today)
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MetricCard(title = "Active Jobs", count = activeCount.toString(), icon = Icons.Default.Work, modifier = Modifier.weight(1f))
+                    MetricCard(title = "En Route", count = enRouteCount.toString(), icon = Icons.Default.Navigation, modifier = Modifier.weight(1f))
+                    MetricCard(title = "Completed today", count = completedCount.toString(), icon = Icons.Default.CheckCircle, modifier = Modifier.weight(1f))
+                }
+            }
+
+            // Section Title
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Today's Jobs", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("\${todayJobs.size} jobs", color = Color(0xFF94A3B8), fontSize = 13.sp)
+                }
+            }
+
+            // Today's Jobs List
+            items(todayJobs) { job ->
+                TodayJobCard(
+                    job = job,
+                    onNavigate = { onNavigate(job) },
+                    onCall = { onCall(job.customerPhone) },
+                    onWhatsApp = { onWhatsApp(job) },
+                    onClick = { onJobClick(job) }
+                )
+            }
+        }
+    }
+}`,
     main_activity: `package com.fieldnora.technician
 
 import android.os.Bundle
@@ -521,6 +612,7 @@ Canvas(
 
             <div className="flex gap-1.5 border-b border-slate-100 pb-2 overflow-x-auto text-xs">
               {[
+                { key: 'home_dashboard', label: 'TodayDashboardScreen.kt (Ci01L)' },
                 { key: 'main_activity', label: 'MainActivity.kt' },
                 { key: 'build_gradle', label: 'build.gradle.kts' },
                 { key: 'job_detail', label: 'JobDetailScreen.kt (Intents)' },
@@ -549,20 +641,49 @@ Canvas(
 
         {/* Right Column (5 Cols): Live Mobile Device Simulator */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <h2 className="text-sm font-bold text-slate-900">
                 Native Kotlin Jetpack Compose Simulator
               </h2>
             </div>
-            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Material 3
-            </span>
+            
+            {/* Mode switch */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs">
+              <button
+                onClick={() => setSimulatorViewMode('today_dashboard')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                  simulatorViewMode === 'today_dashboard'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Today's Jobs (Ci01L)
+              </button>
+              <button
+                onClick={() => setSimulatorViewMode('intent_tester')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                  simulatorViewMode === 'intent_tester'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Legacy Tester
+              </button>
+            </div>
           </div>
 
-          {/* Smartphone Frame */}
-          <div className="w-full max-w-[340px] mx-auto bg-slate-950 p-3 rounded-[38px] shadow-2xl border-4 border-slate-800">
+          {simulatorViewMode === 'today_dashboard' ? (
+            <div className="space-y-3">
+              <div className="bg-[#0B1118] p-3 rounded-2xl border border-slate-800 text-xs text-slate-300">
+                <span className="font-bold text-[#14B8A6]">Android APK Preview:</span> Rendering the exact Jetpack Compose design with <span className="font-mono text-white">07:42 / 61% Battery / Today 24 May 2025</span>, 3 active jobs, and direct Kenyan WhatsApp/Call intents.
+              </div>
+              <MobileApkTodayJobsView />
+            </div>
+          ) : (
+            /* Smartphone Frame */
+            <div className="w-full max-w-[340px] mx-auto bg-slate-950 p-3 rounded-[38px] shadow-2xl border-4 border-slate-800">
             {/* Camera Hole / Speaker notch */}
             <div className="flex justify-center mb-2">
               <div className="w-16 h-4 bg-slate-900 rounded-full flex items-center justify-center">
@@ -823,6 +944,7 @@ Canvas(
 
             </div>
           </div>
+          )}
         </div>
 
       </div>
