@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   X,
   Sparkles,
-  Wrench
+  Wrench,
+  Smartphone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -51,6 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           icon: <Wrench className="w-4.5 h-4.5" />,
         },
         { id: 'map', label: 'GPS & Location Map', icon: <MapPin className="w-4.5 h-4.5" /> },
+        { id: 'technician', label: 'Technician Mobile App', icon: <Smartphone className="w-4.5 h-4.5" />, highlight: true },
+        { id: 'mobile', label: 'Android Kotlin Hub', icon: <Smartphone className="w-4.5 h-4.5" />, badge: 'Native' },
       ],
     },
     {

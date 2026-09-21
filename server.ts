@@ -6,7 +6,7 @@ import { apiRouter } from './server/routes';
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
 
   // Cross-Origin Resource Sharing for Android Native App, Emulators & Web
   app.use(

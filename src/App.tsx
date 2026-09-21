@@ -21,6 +21,8 @@ import { CustomerPortalView } from './components/portal/CustomerPortalView';
 import { ReportsView } from './components/reports/ReportsView';
 import { AuditLogsView } from './components/audit/AuditLogsView';
 import { ServicesCatalogView } from './components/services/ServicesCatalogView';
+import { TechnicianMobileView } from './components/technician/TechnicianMobileView';
+import { MobileAppCenterView } from './components/mobile/MobileAppCenterView';
 
 const MainLayout: React.FC = () => {
   const { activeTab } = useApp();
@@ -40,6 +42,10 @@ const MainLayout: React.FC = () => {
         return <ServicesCatalogView />;
       case 'map':
         return <GpsMapView />;
+      case 'technician':
+        return <TechnicianMobileView />;
+      case 'mobile':
+        return <MobileAppCenterView />;
       case 'estimates':
         return <EstimatesView />;
       case 'invoices':

@@ -1255,7 +1255,7 @@ apiRouter.get('/mobile/download-zip', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', 'attachment; filename="fieldnora-android-kotlin.zip"');
 
-  const archive = new (ZipArchive as any)({
+  const archive = new ZipArchive({
     zlib: { level: 9 },
   });
 
