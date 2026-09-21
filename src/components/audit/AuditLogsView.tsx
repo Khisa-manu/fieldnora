@@ -3,34 +3,70 @@ import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import {
   ShieldAlert,
-  Search,
-  Filter,
-  User,
-  Clock,
-  FileText,
+  Database,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw,
+  Server,
+  Cloud,
+  Check
 } from 'lucide-react';
 import { AuditLog } from '../../types';
+
+interface DatabaseStatus {
+  engine: string;
+  orm: string;
+  provider: string;
+  connected: boolean;
+  host?: string;
+  error?: string;
+  initializedAt?: string;
+  supportedHosts: string[];
+}
 
 export const AuditLogsView: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState('all');
+  const [dbStatus, setDbStatus] = useState<DatabaseStatus | null>(null);
+  const [dbTesting, setDbTesting] = useState(false);
+  const [dbTestResult, setDbTestResult] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadLogs = async () => {
+    const loadData = async () => {
       try {
-        const lList = await api.getAuditLogs();
+        const [lList, status] = await Promise.all([
+          api.getAuditLogs(),
+          api.getDatabaseStatus().catch(() => null),
+        ]);
         setLogs(lList);
+        if (status) setDbStatus(status);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    loadLogs();
+    loadData();
   }, []);
+
+  const handleTestDatabase = async () => {
+    setDbTesting(true);
+    setDbTestResult(null);
+    try {
+      const res = await api.testDatabaseConnection();
+      if (res.status) setDbStatus(res.status);
+      if (res.success) {
+        setDbTestResult(`Connected successfully to ${res.status?.provider || 'PostgreSQL'} via Drizzle ORM!`);
+      } else {
+        setDbTestResult(`Connection standby: ${res.status?.error || 'Awaiting DATABASE_URL in settings.'}`);
+      }
+    } catch (err: any) {
+      setDbTestResult(`Test error: ${err.message || 'Could not verify database'}`);
+    } finally {
+      setDbTesting(false);
+    }
+  };
 
   const filteredLogs = logs.filter(
     l => filterAction === 'all' || l.action.toLowerCase().includes(filterAction)
@@ -38,7 +74,96 @@ export const AuditLogsView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
+      {/* Database Production Architecture Status Card */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600 shrink-0">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900">PostgreSQL + Drizzle ORM Database</h2>
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    dbStatus?.connected
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  }`}
+                >
+                  {dbStatus?.connected ? (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Live: {dbStatus.provider.toUpperCase()}
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      PostgreSQL Ready
+                    </>
+                  )}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Targeted for <strong>Neon Serverless Postgres</strong> or <strong>Railway PostgreSQL</strong> via Drizzle ORM with connection pooling & automated schema bootstrapping.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={handleTestDatabase}
+              disabled={dbTesting}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${dbTesting ? 'animate-spin' : ''}`} />
+              {dbTesting ? 'Verifying...' : 'Test Connection'}
+            </button>
+          </div>
+        </div>
+
+        {/* Database specs grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex items-center gap-1.5 text-slate-500 font-medium mb-1">
+              <Server className="w-3.5 h-3.5 text-slate-400" />
+              Engine & ORM
+            </div>
+            <div className="font-bold text-slate-900 font-mono">PostgreSQL 16 · Drizzle ORM</div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex items-center gap-1.5 text-slate-500 font-medium mb-1">
+              <Cloud className="w-3.5 h-3.5 text-slate-400" />
+              Supported Hosting
+            </div>
+            <div className="font-bold text-slate-900 font-mono">Neon (AWS) / Railway</div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex items-center gap-1.5 text-slate-500 font-medium mb-1">
+              <Database className="w-3.5 h-3.5 text-slate-400" />
+              Current Host / Endpoint
+            </div>
+            <div className="font-bold text-slate-900 font-mono truncate">
+              {dbStatus?.host || 'DATABASE_URL (Environment variable)'}
+            </div>
+          </div>
+        </div>
+
+        {/* Feedback banner */}
+        {dbTestResult && (
+          <div className={`p-3 rounded-xl text-xs font-medium border ${
+            dbTestResult.includes('success')
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-amber-50 text-amber-800 border-amber-200'
+          }`}>
+            {dbTestResult}
+          </div>
+        )}
+      </div>
+
+      {/* Audit Logs Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
@@ -99,12 +224,10 @@ export const AuditLogsView: React.FC = () => {
                         {log.action}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-slate-600 capitalize">{log.entityType}</td>
-                    <td className="py-3.5 px-4 font-mono text-teal-800 font-medium">
-                      {log.entityId}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px] max-w-xs truncate">
-                      {JSON.stringify(log.details)}
+                    <td className="py-3.5 px-4 text-slate-600 font-medium">{log.entity}</td>
+                    <td className="py-3.5 px-4 font-mono text-slate-500 text-[11px]">{log.entityId}</td>
+                    <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate">
+                      {log.newValue || log.previousValue || 'Action logged'}
                     </td>
                   </tr>
                 ))}

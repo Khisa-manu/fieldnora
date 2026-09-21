@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { ZipArchive } from 'archiver';
+import { getPostgresConnectionStatus, initPostgresDatabase } from './postgres';
 
 export const apiRouter = express.Router();
 
@@ -1284,15 +1285,56 @@ apiRouter.get('/mobile/download-zip', (req: Request, res: Response) => {
 // ----------------------------------------------------
 apiRouter.get('/system/status', (req: Request, res: Response) => {
   const orgId = getOrgId(req);
+  const pgStatus = getPostgresConnectionStatus();
   res.json({
     status: 'online',
     service: 'fieldnora-core-api',
     orgId,
     timestamp: new Date().toISOString(),
     version: '1.0.0',
+    database: {
+      orm: 'Drizzle ORM',
+      engine: 'PostgreSQL',
+      provider: pgStatus.provider,
+      connected: pgStatus.connected,
+      host: pgStatus.host,
+      message: pgStatus.connected
+        ? `Connected to ${pgStatus.provider} PostgreSQL database via Drizzle ORM`
+        : (pgStatus.error || 'DATABASE_URL not configured. Provide DATABASE_URL to connect to Neon or Railway Postgres.')
+    },
     totalJobs: db.getJobs(orgId).length,
     activeTechnicians: db.getTechnicians(orgId).length,
   });
+});
+
+apiRouter.get('/database/status', (req: Request, res: Response) => {
+  const pgStatus = getPostgresConnectionStatus();
+  res.json({
+    engine: 'PostgreSQL',
+    orm: 'Drizzle ORM',
+    provider: pgStatus.provider,
+    connected: pgStatus.connected,
+    host: pgStatus.host,
+    initializedAt: pgStatus.initializedAt,
+    error: pgStatus.error,
+    supportedHosts: ['Neon (neon.tech)', 'Railway (railway.app)', 'Self-hosted / Cloud SQL PostgreSQL']
+  });
+});
+
+apiRouter.post('/database/test', async (req: Request, res: Response) => {
+  try {
+    const success = await initPostgresDatabase();
+    const pgStatus = getPostgresConnectionStatus();
+    res.json({
+      success,
+      status: pgStatus
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      error: err.message || String(err)
+    });
+  }
 });
 
 apiRouter.get('/config', (req: Request, res: Response) => {

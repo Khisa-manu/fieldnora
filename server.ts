@@ -1,12 +1,19 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes';
+import { initPostgresDatabase, getPostgresConnectionStatus } from './server/postgres';
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Initialize PostgreSQL + Drizzle ORM if DATABASE_URL is provided
+  initPostgresDatabase().catch(err => {
+    console.warn('[PostgreSQL] Database init notice:', err.message || err);
+  });
 
   // Cross-Origin Resource Sharing for Android Native App, Emulators & Web
   app.use(

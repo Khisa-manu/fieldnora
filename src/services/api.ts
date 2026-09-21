@@ -341,4 +341,22 @@ export const api = {
 
   // Audit Logs
   getAuditLogs: () => request<AuditLog[]>('/audit-logs'),
+
+  // PostgreSQL + Drizzle Database Status & Connectivity Test
+  getDatabaseStatus: () =>
+    request<{
+      engine: string;
+      orm: string;
+      provider: string;
+      connected: boolean;
+      host?: string;
+      error?: string;
+      initializedAt?: string;
+      supportedHosts: string[];
+    }>('/database/status'),
+
+  testDatabaseConnection: () =>
+    request<{ success: boolean; status: any }>('/database/test', {
+      method: 'POST',
+    }),
 };
