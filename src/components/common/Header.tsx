@@ -4,7 +4,6 @@ import { BrandLogo } from './BrandLogo';
 import {
   Search,
   Bell,
-  Smartphone,
   ChevronDown,
   Building2,
   Plus,
@@ -34,8 +33,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
     unreadNotifCount,
     setSearchModalOpen,
     setNotificationDrawerOpen,
-    technicianViewMode,
-    setTechnicianViewMode,
     createOrganization,
     showToast,
   } = useApp();
@@ -90,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
                 {currentOrg?.name || 'fieldnora Workspace'}
               </div>
               <div className="text-[10px] text-[#64748B]">
-                {currentOrg?.county || 'Kenya'} • KES (16% VAT)
+                {currentOrg?.county || 'HQ'} • KES (16% VAT)
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
@@ -115,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
                 >
                   <div className="truncate">
                     <div className="font-medium text-xs">{org.name}</div>
-                    <div className="text-[10px] text-slate-400">{org.county}, Kenya</div>
+                    <div className="text-[10px] text-slate-400">{org.county}</div>
                   </div>
                   {org.id === currentOrg?.id && (
                     <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-medium">
@@ -161,56 +158,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
 
       {/* Right Side: Tools, Role Switcher, Mobile Mode, Notifications */}
       <div className="flex items-center gap-2.5">
-        {/* Kenya Online Status */}
+        {/* System Online Status */}
         <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200/60">
-          <Wifi className="w-3 h-3 text-emerald-600" />
-          <span>EAT (UTC+3)</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>System Online</span>
         </div>
-
-        {/* Native Android Kotlin / APK Build Center button */}
-        <button
-          onClick={() => {
-            setActiveTab('mobile');
-            showToast('Opened Native Kotlin Android Studio APK Center', 'info');
-          }}
-          className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-            activeTab === 'mobile'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-              : 'bg-slate-100 text-slate-800 border-slate-300/80 hover:bg-slate-200'
-          }`}
-          title="Native Android (Kotlin) Studio APK Center"
-        >
-          <Smartphone className={`w-3.5 h-3.5 ${activeTab === 'mobile' ? 'text-teal-400' : 'text-slate-600'}`} />
-          <span>Kotlin APK</span>
-        </button>
-
-        {/* Technician Field Mobile Mode Toggle */}
-        <button
-          id="tech-mobile-toggle-btn"
-          onClick={() => {
-            if (activeTab === 'technician') {
-              setActiveTab('dashboard');
-              setTechnicianViewMode(false);
-              showToast('Returned to Dashboard view', 'info');
-            } else {
-              setActiveTab('technician');
-              setTechnicianViewMode(true);
-              setUserRole('technician');
-              showToast('Opened Field Technician Mobile App View', 'success');
-            }
-          }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-            activeTab === 'technician'
-              ? 'bg-[#14B8A6] text-white border-[#14B8A6] shadow-xs'
-              : 'bg-teal-50 text-teal-900 border-teal-200 hover:bg-teal-100'
-          }`}
-          title="Open Technician Mobile App"
-        >
-          <Smartphone className={`w-3.5 h-3.5 ${activeTab === 'technician' ? 'text-white' : 'text-teal-600'}`} />
-          <span className="hidden sm:inline">
-            {activeTab === 'technician' ? 'Exit Mobile App' : 'Tech Mobile App'}
-          </span>
-        </button>
 
         {/* Role Switcher */}
         <div className="relative">
@@ -254,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
           id="notification-bell-btn"
           onClick={() => setNotificationDrawerOpen(true)}
           className="relative p-2 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-          title="Notifications & Kenya Alerts"
+          title="Notifications & System Alerts"
         >
           <Bell className="w-4.5 h-4.5" />
           {unreadNotifCount > 0 && (

@@ -6,7 +6,6 @@ import {
   Users,
   Briefcase,
   Calendar,
-  Smartphone,
   MapPin,
   FileText,
   Receipt,
@@ -27,7 +26,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
-  const { activeTab, setActiveTab, setTechnicianViewMode, userRole, currentOrg } = useApp();
+  const { activeTab, setActiveTab, userRole, currentOrg } = useApp();
 
   const navSections: Array<{
     title: string;
@@ -48,32 +47,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
         { id: 'dispatch', label: 'Schedule & Dispatch', icon: <Calendar className="w-4.5 h-4.5" /> },
         {
           id: 'services',
-          label: 'Services & Trades (81)',
+          label: 'Services & Trades',
           icon: <Wrench className="w-4.5 h-4.5" />,
-          badge: 'Catalog',
-        },
-        {
-          id: 'technician',
-          label: 'Technician Mobile App',
-          icon: <Smartphone className="w-4.5 h-4.5" />,
-          badge: 'Field Ready',
-        },
-        {
-          id: 'mobile',
-          label: 'Native Android (Kotlin APK)',
-          icon: <Smartphone className="w-4.5 h-4.5" />,
-          badge: 'Kotlin',
-          highlight: true,
         },
         { id: 'map', label: 'GPS & Location Map', icon: <MapPin className="w-4.5 h-4.5" /> },
       ],
     },
     {
-      title: 'Finance & Kenya Payments',
+      title: 'Finance & Payments',
       items: [
         { id: 'estimates', label: 'Estimates / Quotes', icon: <FileText className="w-4.5 h-4.5" /> },
         { id: 'invoices', label: 'Invoices & eTIMS', icon: <Receipt className="w-4.5 h-4.5" /> },
-        { id: 'payments', label: 'M-Pesa & Payments', icon: <CreditCard className="w-4.5 h-4.5" />, badge: 'Daraja' },
+        { id: 'payments', label: 'Payments & Billing', icon: <CreditCard className="w-4.5 h-4.5" /> },
       ],
     },
     {
@@ -90,11 +75,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
 
   const handleNavClick = (tabId: ActiveTab) => {
     setActiveTab(tabId);
-    if (tabId === 'technician') {
-      setTechnicianViewMode(true);
-    } else {
-      setTechnicianViewMode(false);
-    }
     onCloseMobile();
   };
 
@@ -184,8 +164,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
         <div className="p-3 border-t border-slate-800/80 bg-[#0A101D]/70">
           <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Kenya Node (Active)
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              System Operational
             </span>
             <span className="text-[10px] uppercase font-bold text-teal-400 bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-800/50">
               {userRole}

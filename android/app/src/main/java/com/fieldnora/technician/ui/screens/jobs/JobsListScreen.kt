@@ -30,10 +30,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun JobsListScreen(
     repository: JobRepository,
-    onJobClick: (String) -> Unit
+    onJobClick: (String) -> Unit,
+    onOpenProfile: () -> Unit = {}
 ) {
     val jobs by repository.jobs.collectAsState()
     val syncMessage by repository.syncMessage.collectAsState()
+    val currentTech by repository.currentTechnician.collectAsState()
     val scope = rememberCoroutineScope()
     var selectedFilter by remember { mutableStateOf<String>("All") }
 
@@ -54,7 +56,7 @@ fun JobsListScreen(
                             color = Slate50
                         )
                         Text(
-                            text = syncMessage ?: "Technician: Brian Kiprop",
+                            text = "Tech: ${currentTech.name} (${currentTech.vehicleReg})",
                             style = MaterialTheme.typography.labelSmall,
                             color = FieldNoraTealLight
                         )
@@ -67,6 +69,22 @@ fun JobsListScreen(
                             contentDescription = "Sync",
                             tint = Slate50
                         )
+                    }
+                    IconButton(onClick = onOpenProfile) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(FieldNoraTeal),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = currentTech.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

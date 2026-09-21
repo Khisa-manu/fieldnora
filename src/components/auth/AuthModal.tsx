@@ -106,76 +106,36 @@ export const AuthModal: React.FC = () => {
 
         <div className="p-6 space-y-5 text-xs">
           {mode === 'login' && (
-            <div className="space-y-4">
-              {/* 1-Click Role Switcher Demo Fast-Path */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Select Active Persona to Test (1-Click Switch):
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { role: 'admin' as UserRole, name: 'Managing Director', desc: 'Full system control' },
-                    { role: 'dispatcher' as UserRole, name: 'Lead Dispatcher', desc: 'Scheduling & routing' },
-                    { role: 'technician' as UserRole, name: 'Field Technician', desc: 'Touch mobile app' },
-                    { role: 'billing_manager' as UserRole, name: 'Finance Lead', desc: 'eTIMS & M-Pesa' },
-                  ].map(item => (
-                    <button
-                      key={item.role}
-                      type="button"
-                      onClick={() => {
-                        setUserRole(item.role);
-                        setAuthModalOpen(false);
-                      }}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        userRole === item.role
-                          ? 'border-teal-500 bg-teal-50/70 text-teal-950 font-bold shadow-xs'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      <div className="font-bold">{item.name}</div>
-                      <div className="text-[10px] text-slate-500">{item.desc}</div>
-                    </button>
-                  ))}
-                </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Corporate Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="admin@fieldnora.co.ke"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-hidden focus:border-teal-500 text-sm"
+                />
               </div>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-bold uppercase">
-                  Or Credentials Login
-                </span>
-                <div className="flex-grow border-t border-slate-200"></div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-hidden focus:border-teal-500 text-sm"
+                />
               </div>
-
-              <form onSubmit={handleLogin} className="space-y-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Corporate Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-hidden"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl shadow-xs transition-colors"
-                >
-                  Authorize Session
-                </button>
-              </form>
-            </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl shadow-xs transition-colors text-sm"
+              >
+                Sign In
+              </button>
+            </form>
           )}
 
           {mode === 'new_org' && (

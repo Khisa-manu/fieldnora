@@ -96,10 +96,10 @@ export const PaymentsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-teal-600" />
-            <h1 className="text-xl font-bold text-[#0F172A]">Payments & M-Pesa Daraja Gateway</h1>
+            <h1 className="text-xl font-bold text-[#0F172A]">Payments & Billing</h1>
           </div>
           <p className="text-xs text-[#64748B] mt-0.5">
-            Real-time Lipa Na M-Pesa STK push, Kenyan bank transfers, and balance reconciliation.
+            Real-time digital payment processing, bank transfers, and automated ledger reconciliation.
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export const PaymentsView: React.FC = () => {
         </div>
 
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-          <span className="text-xs font-semibold text-slate-500">Lipa Na M-Pesa Volume</span>
+          <span className="text-xs font-semibold text-slate-500">Mobile Money Volume</span>
           <div className="text-2xl font-black text-emerald-600 font-mono">
             KES {mpesaTotal.toLocaleString()}
           </div>
@@ -135,12 +135,12 @@ export const PaymentsView: React.FC = () => {
         </div>
 
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-          <span className="text-xs font-semibold text-slate-500">Paybill Integration</span>
+          <span className="text-xs font-semibold text-slate-500">Payment Gateway</span>
           <div className="text-sm font-bold text-slate-900">
             Paybill: <span className="font-mono text-teal-700">522522</span>
           </div>
           <div className="text-[11px] text-slate-400">
-            Automated Daraja IPN webhook callbacks
+            Automated IPN webhook callbacks
           </div>
         </div>
       </div>

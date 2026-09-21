@@ -296,6 +296,18 @@ class DatabaseService {
     return this.data.technicians.find(t => t.id === id);
   }
 
+  createTechnician(tech: Omit<Technician, 'id' | 'lastLocationUpdate'>, actorName = 'Admin'): Technician {
+    const newTech: Technician = {
+      ...tech,
+      id: 'tech-' + crypto.randomUUID().slice(0, 8),
+      lastLocationUpdate: new Date().toISOString(),
+    };
+    this.data.technicians.push(newTech);
+    this.logAudit(tech.orgId, 'sys', actorName, 'TECHNICIAN_CREATED', 'Technician', newTech.id, '', newTech.name);
+    this.scheduleSave();
+    return newTech;
+  }
+
   updateTechnicianStatus(
     id: string,
     status: Technician['activeStatus'],

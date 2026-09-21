@@ -102,7 +102,7 @@ export const InvoicesView: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-[#64748B] mt-0.5">
-            Kenyan electronic tax invoices with control codes, CU numbers, and Lipa Na M-Pesa STK push.
+            Electronic tax invoices with fiscal control codes, CU confirmation, and instant mobile payment settlement.
           </p>
         </div>
 
@@ -466,7 +466,7 @@ export const InvoicesView: React.FC = () => {
                   MP
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#0F172A] text-sm">Lipa Na M-Pesa Online (Daraja)</h3>
+                  <h3 className="font-bold text-[#0F172A] text-sm">Lipa Na M-Pesa Online</h3>
                   <p className="text-[11px] text-slate-500">Instant STK Push Prompt</p>
                 </div>
               </div>
@@ -509,7 +509,7 @@ export const InvoicesView: React.FC = () => {
               <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 text-[11px] space-y-1">
                 <div className="font-bold flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  Instant Daraja Push
+                  Instant STK Push
                 </div>
                 <p>
                   A PIN prompt will appear on the customer&apos;s phone. Upon entering PIN, the invoice balance will automatically settle in real-time.

@@ -34,13 +34,31 @@ object RetrofitClient {
         })
         .create()
 
+    var sessionToken: String? = null
+    var currentOrgId: String = "org-nairobi-prime-01"
+    var currentTechnicianName: String = "Brian Kiprop"
+    var currentTechnicianId: String = "tech-01"
+
+    fun updateSessionHeaders(token: String?, orgId: String, techName: String, techId: String) {
+        sessionToken = token
+        currentOrgId = orgId.ifBlank { "org-nairobi-prime-01" }
+        currentTechnicianName = techName.ifBlank { "Brian Kiprop" }
+        currentTechnicianId = techId.ifBlank { "tech-01" }
+    }
+
     private val authHeaderInterceptor = Interceptor { chain ->
         val original = chain.request()
         val requestBuilder = original.newBuilder()
-            .header("x-org-id", "org-nairobi-prime-01")
-            .header("x-user-name", "Brian Kiprop")
+            .header("x-org-id", currentOrgId)
+            .header("x-user-name", currentTechnicianName)
+            .header("x-technician-id", currentTechnicianId)
             .header("Accept", "application/json")
-            .method(original.method, original.body)
+        sessionToken?.let {
+            if (it.isNotBlank()) {
+                requestBuilder.header("Authorization", "Bearer $it")
+            }
+        }
+        requestBuilder.method(original.method, original.body)
         chain.proceed(requestBuilder.build())
     }
 

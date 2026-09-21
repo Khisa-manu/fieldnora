@@ -211,7 +211,7 @@ export const NotificationDrawer: React.FC = () => {
           {/* Test Dispatch Modal */}
           {testModalOpen && (
             <div className="p-4 border-t border-slate-200 bg-slate-50">
-              <h4 className="text-xs font-bold text-slate-800 mb-2">Simulate Customer Dispatch Notice</h4>
+              <h4 className="text-xs font-bold text-slate-800 mb-2">Outbound Customer Dispatch Notification</h4>
               <form onSubmit={handleSendDispatchAlert} className="space-y-2.5 text-xs">
                 <div className="flex gap-2">
                   <button

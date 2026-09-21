@@ -30,7 +30,7 @@ import { ALL_SERVICES, SECTORS } from '../../data/serviceVerticals';
 import { SignaturePad } from '../common/SignaturePad';
 
 export const JobsView: React.FC = () => {
-  const { showToast, setActiveTab, setTechnicianViewMode } = useApp();
+  const { showToast, setActiveTab } = useApp();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -192,28 +192,41 @@ export const JobsView: React.FC = () => {
     }
   };
 
-  const handleSimulatePhotoUpload = async (phase: 'before' | 'during' | 'after') => {
-    if (!selectedJob) return;
-    const samplePhotos = {
-      before: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-      during: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
-      after: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
-    };
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [photoPhase, setPhotoPhase] = useState<'before' | 'during' | 'after'>('before');
 
-    try {
-      const updated = await api.addJobPhoto(selectedJob.id, {
-        url: samplePhotos[phase],
-        caption: `Site inspection snapshot (${phase.toUpperCase()})`,
-        phase,
-        latitude: -1.286389,
-        longitude: 36.817223,
-      });
-      setSelectedJob(updated);
-      setJobs(prev => prev.map(j => (j.id === selectedJob.id ? updated : j)));
-      showToast(`Added ${phase.toUpperCase()} field photo with GPS timestamp`, 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to attach photo', 'error');
+  const handleTriggerPhotoUpload = (phase: 'before' | 'during' | 'after') => {
+    setPhotoPhase(phase);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
     }
+  };
+
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedJob) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      try {
+        const updated = await api.addJobPhoto(selectedJob.id, {
+          url: dataUrl,
+          caption: `${file.name} (${photoPhase.toUpperCase()})`,
+          phase: photoPhase,
+          latitude: -1.286389,
+          longitude: 36.817223,
+        });
+        setSelectedJob(updated);
+        setJobs(prev => prev.map(j => (j.id === selectedJob.id ? updated : j)));
+        showToast(`Uploaded ${photoPhase.toUpperCase()} photo successfully`, 'success');
+      } catch (err: any) {
+        showToast(err.message || 'Failed to upload photo', 'error');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleConvertToInvoice = async (job: Job) => {
@@ -533,27 +546,16 @@ export const JobsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Technician Mobile Mode Link & Convert to Invoice */}
+                {/* Convert to Invoice */}
                 <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-teal-50/50 rounded-xl border border-teal-100">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-teal-600" />
-                    <span className="font-semibold text-teal-900">Field Operations Actions</span>
+                    <span className="font-semibold text-teal-900">Billing & Invoicing</span>
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        setJobModalOpen(false);
-                        setTechnicianViewMode(true);
-                        setActiveTab('technician');
-                      }}
-                      className="px-3 py-1.5 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 flex items-center gap-1.5"
-                    >
-                      <Wrench className="w-3.5 h-3.5" />
-                      Open in Mobile Tech App
-                    </button>
-                    <button
                       onClick={() => handleConvertToInvoice(selectedJob)}
-                      className="px-3 py-1.5 bg-[#14B8A6] text-white rounded-lg font-semibold hover:bg-teal-700 flex items-center gap-1.5 shadow-2xs"
+                      className="px-3.5 py-1.5 bg-[#14B8A6] text-white rounded-lg font-semibold hover:bg-teal-700 flex items-center gap-1.5 shadow-2xs"
                     >
                       <Receipt className="w-3.5 h-3.5" />
                       Convert to Invoice
@@ -606,15 +608,24 @@ export const JobsView: React.FC = () => {
                       Field Photos Gallery ({selectedJob.photos.length})
                     </h4>
                     <div className="flex gap-1.5">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
                       <button
-                        onClick={() => handleSimulatePhotoUpload('before')}
-                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-semibold text-[11px] text-slate-700"
+                        type="button"
+                        onClick={() => handleTriggerPhotoUpload('before')}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-semibold text-[11px] text-slate-700 transition-colors"
                       >
                         + Before Photo
                       </button>
                       <button
-                        onClick={() => handleSimulatePhotoUpload('after')}
-                        className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded font-semibold text-[11px] text-emerald-800"
+                        type="button"
+                        onClick={() => handleTriggerPhotoUpload('after')}
+                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 rounded font-semibold text-[11px] text-emerald-800 transition-colors"
                       >
                         + After Photo
                       </button>

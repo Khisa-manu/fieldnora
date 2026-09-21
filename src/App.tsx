@@ -11,7 +11,6 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { CustomersView } from './components/customers/CustomersView';
 import { JobsView } from './components/jobs/JobsView';
 import { DispatchView } from './components/dispatch/DispatchView';
-import { TechnicianMobileView } from './components/technician/TechnicianMobileView';
 import { GpsMapView } from './components/map/GpsMapView';
 import { EstimatesView } from './components/estimates/EstimatesView';
 import { InvoicesView } from './components/invoices/InvoicesView';
@@ -22,10 +21,9 @@ import { CustomerPortalView } from './components/portal/CustomerPortalView';
 import { ReportsView } from './components/reports/ReportsView';
 import { AuditLogsView } from './components/audit/AuditLogsView';
 import { ServicesCatalogView } from './components/services/ServicesCatalogView';
-import { MobileAppCenterView } from './components/mobile/MobileAppCenterView';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, technicianViewMode } = useApp();
+  const { activeTab } = useApp();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const renderActiveView = () => {
@@ -38,10 +36,6 @@ const MainLayout: React.FC = () => {
         return <JobsView />;
       case 'dispatch':
         return <DispatchView />;
-      case 'technician':
-        return <TechnicianMobileView />;
-      case 'mobile':
-        return <MobileAppCenterView />;
       case 'services':
         return <ServicesCatalogView />;
       case 'map':

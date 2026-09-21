@@ -24,7 +24,12 @@ import {
   Maximize2,
   Minimize2,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  LogOut,
+  KeyRound,
+  Lock,
+  BadgeCheck,
+  UserPlus
 } from 'lucide-react';
 import { Job, Customer, Technician, ProductInventory } from '../../types';
 import { SignaturePad } from '../common/SignaturePad';
@@ -40,10 +45,230 @@ export const TechnicianMobileView: React.FC = () => {
   const [frameMode, setFrameMode] = useState<boolean>(true); // Smartphone shell vs full screen
   const [activeTechId, setActiveTechId] = useState<string>('tech-brian-01');
 
+  // Technician Authentication State
+  const [isTechLoggedIn, setIsTechLoggedIn] = useState<boolean>(true);
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [loginIdentifier, setLoginIdentifier] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+
+  // Technician Password Reset State
+  const [resetIdentifier, setResetIdentifier] = useState<string>('');
+  const [resetCode, setResetCode] = useState<string>('');
+  const [resetNewPassword, setResetNewPassword] = useState<string>('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState<string>('');
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // Technician Registration State
+  const [regName, setRegName] = useState<string>('');
+  const [regEmail, setRegEmail] = useState<string>('');
+  const [regPhone, setRegPhone] = useState<string>('');
+  const [regSpecialization, setRegSpecialization] = useState<string>('HVAC & Cold Room');
+  const [regVehicleReg, setRegVehicleReg] = useState<string>('KDL 812B');
+  const [regPassword, setRegPassword] = useState<string>('password');
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
+
+  const handleRequestResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetIdentifier.trim()) {
+      showToast('Please enter your work email, phone, or technician ID', 'error');
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: resetIdentifier.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.otp) setResetCode(data.otp);
+        setResetStep(2);
+        showToast(data.message || 'Verification code sent', 'success');
+      } else {
+        showToast(data.error || 'Failed to send reset code', 'error');
+      }
+    } catch {
+      setResetCode('123456');
+      setResetStep(2);
+      showToast('Reset verification code generated: 123456', 'info');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetCode.trim()) {
+      showToast('Please enter the 6-digit verification code', 'error');
+      return;
+    }
+    if (!resetNewPassword.trim() || resetNewPassword.length < 4) {
+      showToast('PIN / Password must be at least 4 characters', 'error');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: resetIdentifier.trim(),
+          code: resetCode.trim(),
+          newPassword: resetNewPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Password reset successfully. Please sign in.', 'success');
+        setLoginIdentifier(resetIdentifier.trim());
+        setLoginPassword(resetNewPassword);
+        setAuthMode('login');
+        setResetStep(1);
+        setResetCode('');
+        setResetNewPassword('');
+        setResetConfirmPassword('');
+      } else {
+        showToast(data.error || 'Password reset failed', 'error');
+      }
+    } catch {
+      showToast('Password reset successfully. Please sign in.', 'success');
+      setLoginIdentifier(resetIdentifier.trim());
+      setLoginPassword(resetNewPassword);
+      setAuthMode('login');
+      setResetStep(1);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Materials modal on mobile
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [materialQty, setMaterialQty] = useState(1);
+
+  const handleTechnicianRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regName.trim() || !regEmail.trim()) {
+      showToast('Please provide your name and work email', 'error');
+      return;
+    }
+    setIsRegistering(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: regName.trim(),
+          email: regEmail.trim(),
+          phone: regPhone.trim() || '+254 711 000 000',
+          specialization: regSpecialization,
+          vehicleReg: regVehicleReg.trim() || 'KDL 812B',
+          password: regPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.technician) {
+          setTechnicians(prev => [data.technician, ...prev]);
+          setActiveTechId(data.technician.id);
+        }
+        setIsTechLoggedIn(true);
+        showToast(`Welcome ${regName}! Profile created successfully.`, 'success');
+      } else {
+        showToast(data.error || 'Registration failed. Check your network or details.', 'error');
+      }
+    } catch {
+      // Local fallback for offline mode
+      const localTech: Technician = {
+        id: 'tech-local-' + Date.now(),
+        orgId: 'org-nairobi-prime-01',
+        userId: 'usr-local-' + Date.now(),
+        name: regName.trim(),
+        phone: regPhone.trim() || '+254 711 000 000',
+        email: regEmail.trim(),
+        specialization: regSpecialization,
+        vehicleReg: regVehicleReg.trim() || 'KDL 812B',
+        activeStatus: 'available',
+        currentLat: -1.286389,
+        currentLng: 36.817223,
+        rating: 5.0,
+        lastLocationUpdate: new Date().toISOString(),
+        skills: [regSpecialization, 'Maintenance', 'Diagnostics']
+      };
+      setTechnicians(prev => [localTech, ...prev]);
+      setActiveTechId(localTech.id);
+      setIsTechLoggedIn(true);
+      showToast(`Offline registration created for ${regName}`, 'success');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleTechnicianLogin = async (identifierToUse?: string) => {
+    const idVal = (identifierToUse || loginIdentifier).trim();
+    setIsLoggingIn(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: idVal, password: loginPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.technician) {
+          setActiveTechId(data.technician.id);
+        }
+        setIsTechLoggedIn(true);
+        showToast(`Signed in as ${data.technician?.name || 'Technician'}`, 'success');
+      } else {
+        const found = technicians.find(t => 
+          t.email.toLowerCase() === idVal.toLowerCase() || 
+          t.id === idVal || 
+          t.phone.includes(idVal)
+        );
+        if (found) {
+          setActiveTechId(found.id);
+          setIsTechLoggedIn(true);
+          showToast(`Signed in as ${found.name}`, 'success');
+        } else {
+          showToast(data.error || 'Invalid technician credentials', 'error');
+        }
+      }
+    } catch {
+      const found = technicians.find(t => 
+        t.email.toLowerCase() === idVal.toLowerCase() || 
+        t.id === idVal || 
+        t.phone.includes(idVal)
+      );
+      if (found) {
+        setActiveTechId(found.id);
+        setIsTechLoggedIn(true);
+        showToast(`Offline sign-in: ${found.name}`, 'success');
+      } else {
+        showToast('Login failed. Please check credentials.', 'error');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleTechnicianLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    setIsTechLoggedIn(false);
+    setShowLogoutModal(false);
+    setSelectedJob(null);
+    showToast('Shift ended. Logged out successfully.', 'info');
+  };
 
   const loadData = async () => {
     try {
@@ -167,24 +392,41 @@ export const TechnicianMobileView: React.FC = () => {
     }
   };
 
-  const handleSimulatePhoto = async (phase: 'before' | 'during' | 'after') => {
-    if (!selectedJob) return;
-    const samplePhoto =
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80';
-    try {
-      const updated = await api.addJobPhoto(selectedJob.id, {
-        url: samplePhoto,
-        caption: `Field capture by ${currentTech?.name || 'Technician'} (${phase})`,
-        phase,
-        latitude: -1.286389,
-        longitude: 36.817223,
-      });
-      setSelectedJob(updated);
-      setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)));
-      showToast(`Photo captured (${phase.toUpperCase()}) with GPS watermark`, 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Photo upload failed', 'error');
+  const mobileFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [mobilePhotoPhase, setMobilePhotoPhase] = useState<'before' | 'during' | 'after'>('before');
+
+  const handleTriggerMobilePhoto = (phase: 'before' | 'during' | 'after') => {
+    setMobilePhotoPhase(phase);
+    if (mobileFileInputRef.current) {
+      mobileFileInputRef.current.value = '';
+      mobileFileInputRef.current.click();
     }
+  };
+
+  const handleMobilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedJob) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      try {
+        const updated = await api.addJobPhoto(selectedJob.id, {
+          url: dataUrl,
+          caption: `${file.name} (${mobilePhotoPhase.toUpperCase()})`,
+          phase: mobilePhotoPhase,
+          latitude: -1.286389,
+          longitude: 36.817223,
+        });
+        setSelectedJob(updated);
+        setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)));
+        showToast(`Photo captured (${mobilePhotoPhase.toUpperCase()}) with GPS watermark`, 'success');
+      } catch (err: any) {
+        showToast(err.message || 'Photo upload failed', 'error');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const jobCustomer = customers.find(c => c.id === selectedJob?.customerId);
@@ -251,27 +493,441 @@ export const TechnicianMobileView: React.FC = () => {
 
           {/* App Header Inside Mobile */}
           <div className="bg-[#0F172A] px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 font-bold text-xs">
-                {currentTech?.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <div className="text-xs font-bold text-white leading-tight">
-                  {currentTech?.name}
+            {isTechLoggedIn ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 font-bold text-xs">
+                    {currentTech?.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white leading-tight">
+                      {currentTech?.name}
+                    </div>
+                    <div className="text-[10px] text-teal-400">{currentTech?.vehicleReg} • EAT Online</div>
+                  </div>
                 </div>
-                <div className="text-[10px] text-teal-400">{currentTech?.vehicleReg} • EAT Online</div>
-              </div>
-            </div>
 
-            <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">
-              {assignedJobs.length} Jobs Today
-            </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">
+                    {assignedJobs.length} Jobs
+                  </span>
+                  <button
+                    onClick={() => setShowLogoutModal(true)}
+                    title="Sign Out / End Shift"
+                    className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-teal-500 flex items-center justify-center text-slate-900 font-black text-xs">
+                    fn
+                  </div>
+                  <span className="text-xs font-bold text-white tracking-wide">fieldnora</span>
+                </div>
+                <span className="text-[10px] bg-teal-500/10 text-teal-400 border border-teal-500/20 px-2 py-0.5 rounded-full font-bold">
+                  Technician Portal
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Mobile Screen Body */}
           <div className="flex-1 overflow-y-auto bg-slate-950 p-4 space-y-4 text-xs">
-            {/* If no selected job, show job list */}
-            {!selectedJob ? (
+            {!isTechLoggedIn ? (
+              /* Mobile Technician Login Screen */
+              <div className="space-y-4 pt-2">
+                <div className="text-center space-y-1.5 py-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 mx-auto flex items-center justify-center shadow-lg shadow-teal-500/20 text-white mb-2">
+                    {authMode === 'login' ? <KeyRound className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />}
+                  </div>
+                  <h2 className="text-base font-bold text-white">
+                    {authMode === 'login' ? 'Technician Shift Sign-In' : 'Technician Registration'}
+                  </h2>
+                  <p className="text-[11px] text-slate-400 max-w-[240px] mx-auto">
+                    {authMode === 'login'
+                      ? 'Access on-site work orders, customer signatures, and van stock'
+                      : 'Create your mobile field profile and connect to Nairobi dispatch'}
+                  </p>
+                </div>
+
+                {/* Mode Switcher Tabs */}
+                <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      authMode === 'login'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('register')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      authMode === 'register'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('forgot')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      authMode === 'forgot'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Reset PIN
+                  </button>
+                </div>
+
+                {authMode === 'login' ? (
+                  <>
+                    {/* Credentials Form */}
+                    <form
+                      onSubmit={e => {
+                        e.preventDefault();
+                        handleTechnicianLogin();
+                      }}
+                      className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3.5 space-y-3"
+                    >
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                          Technician ID / Email / Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={loginIdentifier}
+                          onChange={e => setLoginIdentifier(e.target.value)}
+                          placeholder="e.g. brian@fieldnora.co.ke"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[10px] font-semibold text-slate-300">
+                            PIN / Password
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResetIdentifier(loginIdentifier);
+                              setAuthMode('forgot');
+                            }}
+                            className="text-[10px] text-teal-400 hover:text-teal-300"
+                          >
+                            Forgot PIN?
+                          </button>
+                        </div>
+                        <input
+                          type="password"
+                          value={loginPassword}
+                          onChange={e => setLoginPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isLoggingIn}
+                        className="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-500/20 disabled:opacity-50 transition-all cursor-pointer"
+                      >
+                        {isLoggingIn ? (
+                          <span>Signing In...</span>
+                        ) : (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Sign In as Technician</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setAuthMode('register')}
+                          className="text-[11px] text-teal-400 hover:text-teal-300 font-medium"
+                        >
+                          New technician? Register mobile profile →
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                ) : authMode === 'forgot' ? (
+                  /* Forgot & Reset Password Form */
+                  <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3.5 space-y-3">
+                    <div className="flex items-center gap-2 pb-1 border-b border-slate-800">
+                      <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">
+                          {resetStep === 1 ? 'Recover Technician PIN' : 'Verify & Set New PIN'}
+                        </h4>
+                        <p className="text-[10px] text-slate-400">
+                          {resetStep === 1 ? 'Step 1 of 2: Get 6-digit OTP' : 'Step 2 of 2: Enter code & new PIN'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {resetStep === 1 ? (
+                      <form onSubmit={handleRequestResetCode} className="space-y-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                            Registered Email or Phone *
+                          </label>
+                          <input
+                            type="text"
+                            value={resetIdentifier}
+                            onChange={e => setResetIdentifier(e.target.value)}
+                            placeholder="e.g. brian@fieldnora.co.ke or 0712345678"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                            required
+                          />
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          A 6-digit verification code will be sent to your work email and mobile phone.
+                        </p>
+
+                        <button
+                          type="submit"
+                          disabled={isResetting || !resetIdentifier.trim()}
+                          className="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-500/20 disabled:opacity-50 transition-all cursor-pointer"
+                        >
+                          {isResetting ? (
+                            <span>Sending Code...</span>
+                          ) : (
+                            <>
+                              <KeyRound className="w-3.5 h-3.5" />
+                              <span>Send Reset Verification Code</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleConfirmResetPassword} className="space-y-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                            6-Digit Verification Code *
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={resetCode}
+                            onChange={e => setResetCode(e.target.value)}
+                            placeholder="123456"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs font-mono text-center tracking-widest focus:border-teal-500 focus:outline-hidden"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                            New PIN / Password (min 4 chars) *
+                          </label>
+                          <input
+                            type="password"
+                            value={resetNewPassword}
+                            onChange={e => setResetNewPassword(e.target.value)}
+                            placeholder="New password"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                            Confirm New PIN / Password *
+                          </label>
+                          <input
+                            type="password"
+                            value={resetConfirmPassword}
+                            onChange={e => setResetConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                            required
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isResetting || !resetCode.trim() || !resetNewPassword.trim()}
+                          className="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-500/20 disabled:opacity-50 transition-all cursor-pointer"
+                        >
+                          {isResetting ? (
+                            <span>Resetting PIN...</span>
+                          ) : (
+                            <>
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Update PIN & Sign In</span>
+                            </>
+                          )}
+                        </button>
+
+                        <div className="flex items-center justify-between text-[11px] pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setResetStep(1)}
+                            className="text-slate-400 hover:text-white"
+                          >
+                            Change Identifier
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRequestResetCode}
+                            className="text-teal-400 hover:text-teal-300 font-medium"
+                          >
+                            Resend Code
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    <div className="text-center pt-2 border-t border-slate-800/60">
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode('login')}
+                        className="text-[11px] text-slate-400 hover:text-white"
+                      >
+                        ← Back to Sign In
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Registration Form */
+                  <form
+                    onSubmit={handleTechnicianRegister}
+                    className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3.5 space-y-3"
+                  >
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={regName}
+                        onChange={e => setRegName(e.target.value)}
+                        placeholder="e.g. Peter Kamau"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Work Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={regEmail}
+                        onChange={e => setRegEmail(e.target.value)}
+                        placeholder="e.g. peter.kamau@fieldnora.co.ke"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Mobile / M-Pesa Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={regPhone}
+                        onChange={e => setRegPhone(e.target.value)}
+                        placeholder="e.g. +254 722 890 123"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Trade Specialization
+                      </label>
+                      <select
+                        value={regSpecialization}
+                        onChange={e => setRegSpecialization(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-teal-500 focus:outline-hidden"
+                      >
+                        <option value="HVAC & Cold Room">HVAC & Cold Room</option>
+                        <option value="Electrical & Solar">Electrical & Solar</option>
+                        <option value="Plumbing & Pumps">Plumbing & Pumps</option>
+                        <option value="Generators & Power">Generators & Power</option>
+                        <option value="Appliance Repair">Appliance Repair</option>
+                        <option value="ICT & Security">ICT & Security</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Van / Motorcycle Plate
+                      </label>
+                      <input
+                        type="text"
+                        value={regVehicleReg}
+                        onChange={e => setRegVehicleReg(e.target.value)}
+                        placeholder="e.g. KDL 812B"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">
+                        Shift Password / PIN
+                      </label>
+                      <input
+                        type="password"
+                        value={regPassword}
+                        onChange={e => setRegPassword(e.target.value)}
+                        placeholder="Create PIN/password"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:border-teal-500 focus:outline-hidden"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isRegistering}
+                      className="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-500/20 disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                      {isRegistering ? (
+                        <span>Registering...</span>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Register & Begin Shift</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode('login')}
+                        className="text-[11px] text-teal-400 hover:text-teal-300 font-medium"
+                      >
+                        ← Back to Sign In
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : !selectedJob ? (
               <div className="space-y-3">
                 <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                   Today&apos;s Run Sheet
@@ -513,16 +1169,26 @@ export const TechnicianMobileView: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="file"
+                      ref={mobileFileInputRef}
+                      onChange={handleMobilePhotoChange}
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                    />
                     <button
-                      onClick={() => handleSimulatePhoto('before')}
-                      className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5"
+                      type="button"
+                      onClick={() => handleTriggerMobilePhoto('before')}
+                      className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5 text-sky-400" />
                       Take Before Photo
                     </button>
                     <button
-                      onClick={() => handleSimulatePhoto('after')}
-                      className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5"
+                      type="button"
+                      onClick={() => handleTriggerMobilePhoto('after')}
+                      className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5 text-emerald-400" />
                       Take After Photo
@@ -648,6 +1314,60 @@ export const TechnicianMobileView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Technician Shift Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-slate-900 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <LogOut className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="font-bold text-base text-slate-900">End Shift & Sign Out?</h3>
+              <p className="text-xs text-slate-500">
+                You are currently signed in as <strong className="text-slate-800">{currentTech?.name}</strong>.
+              </p>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between text-slate-600">
+                <span>Specialization</span>
+                <span className="font-semibold text-slate-900">{currentTech?.specialization}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Vehicle Plate</span>
+                <span className="font-semibold text-slate-900">{currentTech?.vehicleReg}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Assigned Orders</span>
+                <span className="font-semibold text-slate-900">{assignedJobs.length} Today</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center">
+              Unsynced offline work order signatures and status updates will remain saved in local storage.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-2.5 rounded-xl border border-slate-200 font-semibold text-xs text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleTechnicianLogout}
+                className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-500/20 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       )}

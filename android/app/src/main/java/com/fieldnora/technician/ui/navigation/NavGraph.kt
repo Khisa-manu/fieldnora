@@ -15,6 +15,10 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.fieldnora.technician.data.repository.JobRepository
+import com.fieldnora.technician.ui.screens.auth.LoginScreen
+import com.fieldnora.technician.ui.screens.auth.LogoutScreen
+import com.fieldnora.technician.ui.screens.auth.RegisterScreen
+import com.fieldnora.technician.ui.screens.auth.ForgotPasswordScreen
 import com.fieldnora.technician.ui.screens.inventory.VanInventoryScreen
 import com.fieldnora.technician.ui.screens.jobdetail.JobDetailScreen
 import com.fieldnora.technician.ui.screens.jobs.JobsListScreen
@@ -35,6 +39,15 @@ fun MainNavHost(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val isLoggedIn by repository.isLoggedIn.collectAsState()
+
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn && currentRoute != Screen.Login.route && currentRoute != Screen.Register.route && currentRoute != Screen.ForgotPassword.route) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     val bottomNavItems = listOf(
         BottomNavItem("Work Orders", Screen.Jobs.route, Icons.Default.Assignment),
@@ -85,15 +98,75 @@ fun MainNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Jobs.route,
+            startDestination = if (repository.sessionManager.isLoggedIn) Screen.Jobs.route else Screen.Login.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    repository = repository,
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Jobs.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(Screen.Register.route)
+                    },
+                    onNavigateToForgotPassword = {
+                        navController.navigate(Screen.ForgotPassword.route)
+                    }
+                )
+            }
+
+            composable(Screen.Register.route) {
+                RegisterScreen(
+                    repository = repository,
+                    onRegisterSuccess = {
+                        navController.navigate(Screen.Jobs.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Screen.ForgotPassword.route) {
+                ForgotPasswordScreen(
+                    repository = repository,
+                    onPasswordResetSuccess = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.ForgotPassword.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateBackToLogin = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
             composable(Screen.Jobs.route) {
                 JobsListScreen(
                     repository = repository,
                     onJobClick = { jobId ->
                         navController.navigate(Screen.JobDetail.createRoute(jobId))
+                    },
+                    onOpenProfile = {
+                        navController.navigate(Screen.Profile.route)
                     }
+                )
+            }
+
+            composable(Screen.Profile.route) {
+                LogoutScreen(
+                    repository = repository,
+                    onLoggedOut = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
@@ -129,7 +202,17 @@ fun MainNavHost(
             }
 
             composable(Screen.Settings.route) {
-                SettingsScreen(repository = repository)
+                SettingsScreen(
+                    repository = repository,
+                    onLoggedOut = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onViewProfile = {
+                        navController.navigate(Screen.Profile.route)
+                    }
+                )
             }
         }
     }

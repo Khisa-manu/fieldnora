@@ -21,7 +21,7 @@ import {
 import { Job, AuditLog, Technician } from '../../types';
 
 export const DashboardView: React.FC = () => {
-  const { setActiveTab, setTechnicianViewMode, showToast, refreshAppData } = useApp();
+  const { setActiveTab, showToast, refreshAppData } = useApp();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -323,13 +323,10 @@ export const DashboardView: React.FC = () => {
                           </button>
                         )}
                         <button
-                          onClick={() => {
-                            setActiveTab('technician');
-                            setTechnicianViewMode(true);
-                          }}
-                          className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded"
+                          onClick={() => setActiveTab('jobs')}
+                          className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
                         >
-                          Tech View
+                          View Order
                         </button>
                       </div>
                     </div>
