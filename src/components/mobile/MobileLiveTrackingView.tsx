@@ -41,6 +41,13 @@ export interface MobileLiveTrackingViewProps {
   jobTitle?: string;
   destinationAddress?: string;
   destinationArea?: string;
+  technicianName?: string;
+  technicianAvatar?: string;
+  etaMinutes?: number;
+  etaTime?: string;
+  distanceKm?: string;
+  priority?: 'Low' | 'Medium' | 'High' | 'Emergency';
+  isEmbeddedInDesktop?: boolean;
 }
 
 export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
@@ -51,6 +58,13 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
   jobTitle = 'Water Heater Repair',
   destinationAddress = 'Apartment5B, Riverside Drive, Nairobi',
   destinationArea = 'Nairobi CBD',
+  technicianName = 'Alex M.',
+  technicianAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+  etaMinutes = 18,
+  etaTime = '11:00 AM',
+  distanceKm = '6.8 km',
+  priority = 'Medium',
+  isEmbeddedInDesktop = false,
 }) => {
   const { showToast } = useApp();
 
@@ -102,21 +116,21 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
   const handleStartGoogleMapsNavigation = () => {
     setIsNavigating(true);
     showToast('Starting GPS Navigation to Riverside Drive...', 'success');
-    // Open Google Maps intent in new tab if allowed
+    // Open Google Maps intent in new tab
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=-1.2921,36.7865&destination=-1.2635,36.8020&travelmode=driving`;
     window.open(mapsUrl, '_blank');
   };
 
   // Coordinates mapping on the custom SVG map (Kilimani to Nairobi CBD)
   // "You" at Kilimani: x = 145, y = 148
-  // "Job Destination" at Nairobi CBD / Riverside: x = 270, y = 165
+  // "Job Destination" at Nairobi CBD: x = 268, y = 142
   // Current dynamic vehicle position along curve:
   const startX = 145;
   const startY = 148;
-  const targetX = 270;
-  const targetY = 165;
+  const targetX = 268;
+  const targetY = 142;
   const currentVehicleX = startX + (targetX - startX) * routeProgress;
-  const currentVehicleY = startY + (targetY - startY) * routeProgress;
+  const currentVehicleY = startY + (targetY - startY) * routeProgress - Math.sin(routeProgress * Math.PI) * 14;
 
   return (
     <div className="w-full max-w-[420px] bg-[#070C13] text-slate-100 flex flex-col rounded-[48px] border-[10px] border-[#131B26] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden h-[860px] select-none relative font-sans">
@@ -699,10 +713,10 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
                 ETA
               </span>
               <span className="text-[16px] font-black text-[#38BDF8] leading-tight block truncate">
-                18 min
+                {etaMinutes} min
               </span>
               <span className="text-[10.5px] text-slate-400 leading-tight block">
-                11:00 AM
+                {etaTime}
               </span>
             </div>
           </div>
@@ -722,7 +736,7 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
                 Distance
               </span>
               <span className="text-[16px] font-black text-white leading-tight block truncate">
-                6.8 km
+                {distanceKm}
               </span>
             </div>
           </div>
@@ -737,7 +751,7 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
                 Job Priority
               </span>
               <span className="text-[14px] font-black text-[#F97316] leading-tight block truncate">
-                Medium
+                {priority}
               </span>
             </div>
           </div>
@@ -747,13 +761,13 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
         <div className="flex items-center justify-between pt-0.5">
           <div className="flex items-center gap-2.5">
             <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80"
-              alt="Alex M."
+              src={technicianAvatar}
+              alt={technicianName}
               className="w-9 h-9 rounded-full object-cover border border-slate-700 shadow-sm"
             />
             <div>
               <h4 className="text-[13px] font-bold text-white leading-tight">
-                Technician: Alex M.
+                Technician: {technicianName}
               </h4>
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 leading-tight mt-0.5">
                 <span className="w-2 h-2 rounded-full bg-[#22C55E] inline-block shadow-sm" />

@@ -11,6 +11,9 @@ sealed class Screen(val route: String, val title: String) {
     object Signature : Screen("jobs/{jobId}/signature", "Customer Sign-Off") {
         fun createRoute(jobId: String) = "jobs/$jobId/signature"
     }
+    object LiveTracking : Screen("jobs/{jobId}/tracking", "Live Tracking") {
+        fun createRoute(jobId: String) = "jobs/$jobId/tracking"
+    }
     object Inventory : Screen("inventory", "Van Stock")
     object Settings : Screen("settings", "Field Settings")
     object Profile : Screen("profile", "Technician Account")

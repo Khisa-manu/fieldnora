@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { MobileLiveTrackingView } from '../mobile/MobileLiveTrackingView';
 import {
   Activity,
   Navigation,
@@ -25,7 +26,8 @@ import {
   CheckCircle2,
   Car,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  Smartphone
 } from 'lucide-react';
 
 export type LiveTechStatus = 'active' | 'en_route' | 'on_site' | 'offline';
@@ -260,6 +262,8 @@ export const GpsMapView: React.FC = () => {
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState<number>(15);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [activeViewTab, setActiveViewTab] = useState<'fleet' | 'technician_nav'>('fleet');
+  const [showMobileNavModal, setShowMobileNavModal] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -361,8 +365,94 @@ export const GpsMapView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3.5 w-full text-slate-100 select-none pb-6">
-      {/* 4 Top KPI Stat Cards - Matching exact styling from screenshot mrrdB.jpg */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Top Header & Dual Mode Switcher: Fleet Radar vs In-Cab Navigation (vwnwt.jpg) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#0B1118] border border-[#1E293B] p-3.5 rounded-2xl shadow-lg">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg font-bold text-white tracking-tight">Live GPS Telemetry & Navigation</h1>
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live 15s Heartbeat
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Nairobi Metro real-time dispatch, field units tracking, and technician turn-by-turn navigation HUD
+          </p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-[#070C13] p-1 rounded-xl border border-[#1E293B] shrink-0">
+          <button
+            onClick={() => setActiveViewTab('fleet')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeViewTab === 'fleet'
+                ? 'bg-[#14B8A6] text-black shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Fleet Radar (Desktop)</span>
+          </button>
+          <button
+            onClick={() => setActiveViewTab('technician_nav')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeViewTab === 'technician_nav'
+                ? 'bg-[#2563EB] text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>In-Cab Navigation (vwnwt.jpg)</span>
+            <span className="text-[9px] px-1.5 py-0.2 bg-white/20 rounded font-black uppercase">Mobile</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Conditionally Render: In-Cab Navigation View vs Fleet Radar */}
+      {activeViewTab === 'technician_nav' ? (
+        <div className="flex flex-col items-center justify-center w-full py-6 bg-[#080D14] border border-[#1E293B] rounded-3xl p-4 lg:p-6 shadow-2xl space-y-4">
+          {/* Quick Unit Switcher Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 w-full max-w-[420px] bg-[#0E1724] border border-[#1C283A] p-2.5 rounded-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Technician:</span>
+              <select
+                value={selectedTechId}
+                onChange={e => setSelectedTechId(e.target.value)}
+                className="bg-[#141F30] border border-[#223145] text-xs font-bold text-white rounded-lg px-2.5 py-1 focus:outline-none cursor-pointer"
+              >
+                {technicians.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.status.replace('_', ' ')})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => setActiveViewTab('fleet')}
+              className="text-xs font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>← Back to Fleet</span>
+            </button>
+          </div>
+
+          {/* Render MobileLiveTrackingView - Exact match to vwnwt (2).jpg */}
+          <MobileLiveTrackingView
+            onBack={() => setActiveViewTab('fleet')}
+            jobTitle={selectedTech.jobTitle || 'Water Heater Repair'}
+            destinationAddress={selectedTech.customerName ? `${selectedTech.customerName}, ${selectedTech.locationName}, Nairobi` : 'Apartment5B, Riverside Drive, Nairobi'}
+            destinationArea={selectedTech.locationName || 'Nairobi CBD'}
+            technicianName={selectedTech.name}
+            technicianAvatar={selectedTech.avatar}
+            etaMinutes={selectedTech.status === 'en_route' ? 18 : 25}
+            etaTime="11:00 AM"
+            distanceKm="6.8 km"
+            priority="Medium"
+          />
+        </div>
+      ) : (
+        <>
+          {/* 4 Top KPI Stat Cards - Matching exact styling from screenshot mrrdB.jpg */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Active (8) */}
         <div
           id="kpi-card-active"
@@ -1165,10 +1255,22 @@ export const GpsMapView: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCallModalTech(selectedTech)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#111A24] hover:bg-[#16202C] border border-[#1E293B] text-xs font-semibold text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#111A24] hover:bg-[#16202C] border border-[#1E293B] text-xs font-semibold text-white transition-colors cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5 text-[#14B8A6]" />
                 <span>Call {selectedTech.phone}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedTechId(selectedTech.id);
+                  setActiveViewTab('technician_nav');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-semibold text-white transition-colors shadow-md shadow-blue-900/40 cursor-pointer"
+                title="Open live in-cab turn-by-turn navigation view matching screenshot vwnwt.jpg"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>In-Cab Nav (vwnwt.jpg)</span>
               </button>
 
               <a
@@ -1181,6 +1283,35 @@ export const GpsMapView: React.FC = () => {
                 <span>Google Maps Route</span>
               </a>
             </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {/* In-Cab Navigation Quick Modal (Accessible from any view) */}
+      {showMobileNavModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative my-auto">
+            <button
+              onClick={() => setShowMobileNavModal(false)}
+              className="absolute -top-12 right-0 p-2 rounded-full bg-[#16202C] text-slate-300 hover:text-white border border-[#233144] z-50 flex items-center gap-1.5 px-3 text-xs font-semibold cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              <span>Close View</span>
+            </button>
+            <MobileLiveTrackingView
+              onBack={() => setShowMobileNavModal(false)}
+              jobTitle={selectedTech.jobTitle || 'Water Heater Repair'}
+              destinationAddress={selectedTech.customerName ? `${selectedTech.customerName}, ${selectedTech.locationName}, Nairobi` : 'Apartment5B, Riverside Drive, Nairobi'}
+              destinationArea={selectedTech.locationName || 'Nairobi CBD'}
+              technicianName={selectedTech.name}
+              technicianAvatar={selectedTech.avatar}
+              etaMinutes={selectedTech.status === 'en_route' ? 18 : 25}
+              etaTime="11:00 AM"
+              distanceKm="6.8 km"
+              priority="Medium"
+            />
           </div>
         </div>
       )}

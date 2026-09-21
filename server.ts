@@ -35,6 +35,11 @@ async function startServer() {
   // Mount API router FIRST
   app.use('/api', apiRouter);
 
+  // 404 handler for unmatched /api requests to prevent falling through to HTML SPA fallback
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: `API endpoint ${req.method} ${req.url} not found` });
+  });
+
   // Vite middleware for development vs static serve for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
