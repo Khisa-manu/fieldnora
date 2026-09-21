@@ -33,6 +33,7 @@ import {
   Info
 } from 'lucide-react';
 import { SignaturePad } from '../common/SignaturePad';
+import { MobileJobCompletionScreen } from './MobileJobCompletionScreen';
 
 // WhatsApp Brand Icon
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -44,15 +45,20 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
 export interface MobileJobDetailProps {
   onBack?: () => void;
   onOpenLiveTracking?: () => void;
+  onOpenCompletion?: () => void;
   initialJobNumber?: string;
 }
 
 export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
   onBack,
   onOpenLiveTracking,
+  onOpenCompletion,
   initialJobNumber = 'JOB-2025-0587',
 }) => {
   const { showToast } = useApp();
+
+  // Full-screen job completion view toggle
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
 
   // Core Job State matching exact screenshot thWmW.jpg
   const [jobState, setJobState] = useState({
@@ -175,13 +181,11 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
   };
 
   const handleCompleteJob = () => {
-    if (!jobState.signature) {
-      showToast('Please capture customer acceptance signature before completing job', 'warning');
-      setActiveModal('signature');
+    if (onOpenCompletion) {
+      onOpenCompletion();
       return;
     }
-    handleSetStatus('completed');
-    showToast('Job successfully completed and synced to Fieldnora server!', 'success');
+    setShowCompletionScreen(true);
   };
 
   const handleSaveSignature = (dataUrl: string) => {
@@ -197,6 +201,29 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
       setMpesaCountdown(6);
     }, 1200);
   };
+
+  if (showCompletionScreen) {
+    return (
+      <div className="flex justify-center w-full min-h-screen py-2 sm:py-6 px-1 sm:px-4 bg-[#05080E] select-none">
+        <MobileJobCompletionScreen
+          jobNumber={jobState.jobNumber}
+          customerName={jobState.customerName}
+          totalKes={jobState.amountKes}
+          onBack={() => setShowCompletionScreen(false)}
+          onJobSynced={() => {
+            setJobState(prev => ({
+              ...prev,
+              status: 'completed',
+              statusLabel: 'Completed',
+              paymentStatus: 'paid'
+            }));
+            setShowCompletionScreen(false);
+            showToast('Job successfully completed and synced!', 'success');
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center w-full min-h-screen py-2 sm:py-6 px-1 sm:px-4 bg-[#05080E] select-none">
@@ -674,15 +701,21 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
               <span>{jobState.status === 'completed' ? 'Completed ✓' : 'Complete Job'}</span>
             </button>
 
-            {/* Button 3: Add Signature (Dark button with border) */}
+            {/* Button 3: Add Signature (ZMesm.jpg Digital Sign-off) */}
             <button
-              onClick={() => setActiveModal('signature')}
-              className={`py-3 px-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 bg-[#09111A] hover:bg-[#121B27] border active:scale-95 transition-all shadow-sm ${
+              onClick={() => {
+                if (onOpenCompletion) {
+                  onOpenCompletion();
+                } else {
+                  setShowCompletionScreen(true);
+                }
+              }}
+              className={`py-3 px-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 bg-[#09111A] hover:bg-[#121B27] border active:scale-95 transition-all shadow-sm cursor-pointer ${
                 jobState.signature ? 'border-teal-500/60 text-teal-300' : 'border-[#1E293B] text-white'
               }`}
             >
               <FileSignature className="w-4 h-4 text-[#14B8A6]" />
-              <span>{jobState.signature ? 'Signed ✓' : 'Add Signature'}</span>
+              <span>{jobState.signature ? 'Signed ✓' : 'Digital Sign-Off'}</span>
             </button>
 
             {/* Button 4: Collect Payment (M-Pesa) */}

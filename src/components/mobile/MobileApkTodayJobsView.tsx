@@ -35,6 +35,7 @@ import {
 import { SignaturePad } from '../common/SignaturePad';
 import { MobileJobDetailScreen } from './MobileJobDetailScreen';
 import { MobileLiveTrackingView } from './MobileLiveTrackingView';
+import { MobileJobCompletionScreen } from './MobileJobCompletionScreen';
 
 // WhatsApp Brand Icon
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -291,8 +292,8 @@ export const MobileApkTodayJobsView: React.FC = () => {
   // Active Bottom Nav Tab inside the mobile app
   const [mobileNavTab, setMobileNavTab] = useState<'home' | 'jobs' | 'map' | 'profile'>('home');
 
-  // Active Screen: Live Tracking (vwnwt.jpg) vs Job Detail (thWmW.jpg) vs Today's Jobs (Ci01L.jpg)
-  const [activeScreen, setActiveScreen] = useState<'live_tracking' | 'today_dashboard' | 'job_detail'>('live_tracking');
+  // Active Screen: Live Tracking (vwnwt.jpg) vs Job Detail (thWmW.jpg) vs Today's Jobs (Ci01L.jpg) vs Job Completion (ZMesm.jpg)
+  const [activeScreen, setActiveScreen] = useState<'live_tracking' | 'today_dashboard' | 'job_detail' | 'job_completion'>('job_completion');
 
   // Filter mode when clicking metrics cards
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'en_route' | 'completed'>('all');
@@ -534,6 +535,20 @@ export const MobileApkTodayJobsView: React.FC = () => {
               <Briefcase className="w-3.5 h-3.5" />
               <span>Today's Jobs (Ci01L.jpg)</span>
             </button>
+            <button
+              onClick={() => {
+                setActiveScreen('job_completion');
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                activeScreen === 'job_completion'
+                  ? 'bg-[#16A34A] text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Job Completion (ZMesm.jpg)</span>
+              <span className="text-[9px] px-1.5 py-0.2 bg-white/20 rounded font-black uppercase">Sign-Off</span>
+            </button>
           </div>
 
           {activeScreen === 'today_dashboard' && (
@@ -597,6 +612,23 @@ export const MobileApkTodayJobsView: React.FC = () => {
               setActiveScreen('today_dashboard');
             }}
             onOpenLiveTracking={() => setActiveScreen('live_tracking')}
+          />
+        </div>
+      ) : activeScreen === 'job_completion' ? (
+        <div className="flex justify-center py-2">
+          <MobileJobCompletionScreen
+            jobNumber={selectedJob?.jobNumber || '#FN-2400-0897'}
+            customerName={selectedJob?.customerName || 'John Mwangi'}
+            totalKes={selectedJob ? selectedJob.priceKes : 4300}
+            onBack={() => {
+              setActiveScreen('today_dashboard');
+            }}
+            onJobSynced={() => {
+              if (selectedJob) {
+                handleSaveSignature('data:image/svg+xml;base64,presigned');
+              }
+              setActiveScreen('today_dashboard');
+            }}
           />
         </div>
       ) : (
@@ -1091,8 +1123,8 @@ export const MobileApkTodayJobsView: React.FC = () => {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setSignatureModalOpen(true)}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-[#14B8A6] text-[#080D14] font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-[0.99] transition-all"
+                      onClick={() => setActiveScreen('job_completion')}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-[#16A34A] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-green-600/20 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
                     >
                       <FileCheck className="w-4 h-4" />
                       Capture Customer Touch Signature & Complete Job
