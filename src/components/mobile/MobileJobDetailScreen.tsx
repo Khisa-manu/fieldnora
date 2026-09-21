@@ -43,11 +43,13 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
 
 export interface MobileJobDetailProps {
   onBack?: () => void;
+  onOpenLiveTracking?: () => void;
   initialJobNumber?: string;
 }
 
 export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
   onBack,
+  onOpenLiveTracking,
   initialJobNumber = 'JOB-2025-0587',
 }) => {
   const { showToast } = useApp();
@@ -540,7 +542,17 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
               </div>
 
               {/* Interactive Floating Quick GPS Navigator overlay */}
-              <div className="absolute top-2 right-2 flex items-center gap-1">
+              <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                {onOpenLiveTracking && (
+                  <button
+                    onClick={onOpenLiveTracking}
+                    className="bg-[#2563EB]/90 hover:bg-[#1D4ED8] text-white px-2 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-md active:scale-95 transition-all"
+                    title="Live Tracking Map"
+                  >
+                    <Navigation className="w-3.5 h-3.5 transform rotate-45 text-white" />
+                    <span className="text-[10px]">Live Map (vwnwt)</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setActiveModal('gps_navigation')}
                   className="bg-[#09111A]/90 hover:bg-[#121E2C] border border-[#1E2E40] text-teal-400 p-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all"
@@ -718,7 +730,13 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
 
           {/* Action 3: Navigate */}
           <button
-            onClick={() => setActiveModal('gps_navigation')}
+            onClick={() => {
+              if (onOpenLiveTracking) {
+                onOpenLiveTracking();
+              } else {
+                setActiveModal('gps_navigation');
+              }
+            }}
             className="flex flex-col items-center justify-center py-1 text-slate-300 hover:text-white active:scale-95 transition-all"
           >
             <Navigation className="w-4.5 h-4.5 text-[#14B8A6] transform -rotate-45" />
@@ -1276,6 +1294,19 @@ export const MobileJobDetailScreen: React.FC<MobileJobDetailProps> = ({
                   Distance: 1.2 km • ETA: 4 mins (Normal traffic)
                 </div>
               </div>
+
+              {onOpenLiveTracking && (
+                <button
+                  onClick={() => {
+                    setActiveModal('none');
+                    onOpenLiveTracking();
+                  }}
+                  className="w-full py-2.5 rounded-xl font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center gap-2 text-xs shadow-md"
+                >
+                  <Navigation className="w-4 h-4 transform rotate-45" />
+                  <span>Open Live Tracking Map (vwnwt.jpg)</span>
+                </button>
+              )}
 
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(

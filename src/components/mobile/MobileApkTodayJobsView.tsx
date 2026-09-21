@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { SignaturePad } from '../common/SignaturePad';
 import { MobileJobDetailScreen } from './MobileJobDetailScreen';
+import { MobileLiveTrackingView } from './MobileLiveTrackingView';
 
 // WhatsApp Brand Icon
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -290,8 +291,8 @@ export const MobileApkTodayJobsView: React.FC = () => {
   // Active Bottom Nav Tab inside the mobile app
   const [mobileNavTab, setMobileNavTab] = useState<'home' | 'jobs' | 'map' | 'profile'>('home');
 
-  // Active Screen: Today's Jobs Dashboard vs Job Detail Screen
-  const [activeScreen, setActiveScreen] = useState<'today_dashboard' | 'job_detail'>('job_detail');
+  // Active Screen: Live Tracking (vwnwt.jpg) vs Job Detail (thWmW.jpg) vs Today's Jobs (Ci01L.jpg)
+  const [activeScreen, setActiveScreen] = useState<'live_tracking' | 'today_dashboard' | 'job_detail'>('live_tracking');
 
   // Filter mode when clicking metrics cards
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'en_route' | 'completed'>('all');
@@ -488,8 +489,24 @@ export const MobileApkTodayJobsView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Screen Tab Switcher between thWmW.jpg and Ci01L.jpg */}
+          {/* Screen Tab Switcher between vwnwt.jpg, thWmW.jpg and Ci01L.jpg */}
           <div className="flex items-center bg-[#0B1118] p-1 rounded-xl border border-[#1E293B] text-xs">
+            <button
+              onClick={() => {
+                setActiveScreen('live_tracking');
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                activeScreen === 'live_tracking'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5 transform rotate-45" />
+              <span>Live Map (vwnwt.jpg)</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-900/60 text-blue-200 border border-blue-400/30">
+                Live GPS
+              </span>
+            </button>
             <button
               onClick={() => {
                 setActiveScreen('job_detail');
@@ -502,9 +519,6 @@ export const MobileApkTodayJobsView: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Job Detail (thWmW.jpg)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#072426] text-teal-300 border border-teal-500/30">
-                Most Important
-              </span>
             </button>
             <button
               onClick={() => {
@@ -561,8 +575,20 @@ export const MobileApkTodayJobsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Screen Render: Job Detail Screen (thWmW.jpg) vs Today's Jobs Dashboard (Ci01L.jpg) */}
-      {activeScreen === 'job_detail' ? (
+      {/* Screen Render: Live Tracking (vwnwt.jpg) vs Job Detail (thWmW.jpg) vs Today's Jobs (Ci01L.jpg) */}
+      {activeScreen === 'live_tracking' ? (
+        <div className="flex justify-center py-2">
+          <MobileLiveTrackingView
+            jobNumber={selectedJob?.jobNumber || 'JOB-2025-0587'}
+            customerName={selectedJob?.customerName || 'Peter Mwangi'}
+            jobTitle={selectedJob?.title || 'Water Heater Repair'}
+            destinationAddress={selectedJob?.address || 'Apartment5B, Riverside Drive, Nairobi'}
+            destinationArea={selectedJob?.location || 'Nairobi CBD'}
+            onBack={() => setActiveScreen('today_dashboard')}
+            onViewJobDetails={() => setActiveScreen('job_detail')}
+          />
+        </div>
+      ) : activeScreen === 'job_detail' ? (
         <div className="flex justify-center py-2">
           <MobileJobDetailScreen
             initialJobNumber={selectedJob?.jobNumber || 'JOB-2025-0587'}
@@ -570,6 +596,7 @@ export const MobileApkTodayJobsView: React.FC = () => {
               setSelectedJob(null);
               setActiveScreen('today_dashboard');
             }}
+            onOpenLiveTracking={() => setActiveScreen('live_tracking')}
           />
         </div>
       ) : (
@@ -1333,6 +1360,7 @@ export const MobileApkTodayJobsView: React.FC = () => {
                 onClick={() => {
                   setSelectedJob(null);
                   setMobileNavTab('map');
+                  setActiveScreen('live_tracking');
                 }}
                 className="flex flex-col items-center justify-center relative py-1 group"
               >
