@@ -204,7 +204,8 @@ async function bootstrapTables(poolInstance: pg.Pool) {
       last_location_update TEXT NOT NULL,
       rating DOUBLE PRECISION NOT NULL DEFAULT 5.0,
       completed_jobs_count INTEGER DEFAULT 0,
-      skills JSONB NOT NULL DEFAULT '[]'::jsonb
+      skills JSONB NOT NULL DEFAULT '[]'::jsonb,
+      avatar TEXT
     );
 
     CREATE TABLE IF NOT EXISTS jobs (
@@ -345,8 +346,8 @@ async function bootstrapTables(poolInstance: pg.Pool) {
     CREATE TABLE IF NOT EXISTS inventory_transactions (
       id TEXT PRIMARY KEY,
       org_id TEXT NOT NULL,
-      productId TEXT,
-      warehouseId TEXT,
+      product_id TEXT,
+      warehouse_id TEXT,
       type TEXT NOT NULL,
       quantity INTEGER NOT NULL,
       unit_cost DOUBLE PRECISION,
@@ -409,6 +410,63 @@ async function bootstrapTables(poolInstance: pg.Pool) {
   `;
 
   await poolInstance.query(ddl);
+
+  // Apply schema migrations for existing databases to guarantee all schema columns exist
+  try {
+    await poolInstance.query(`
+      ALTER TABLE technicians ADD COLUMN IF NOT EXISTS avatar TEXT;
+      ALTER TABLE technicians ADD COLUMN IF NOT EXISTS current_latitude DOUBLE PRECISION;
+      ALTER TABLE technicians ADD COLUMN IF NOT EXISTS current_longitude DOUBLE PRECISION;
+      ALTER TABLE technicians ADD COLUMN IF NOT EXISTS completed_jobs_count INTEGER DEFAULT 0;
+
+      ALTER TABLE inventory_transactions ADD COLUMN IF NOT EXISTS product_id TEXT;
+      ALTER TABLE inventory_transactions ADD COLUMN IF NOT EXISTS warehouse_id TEXT;
+
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS service_location_id TEXT;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS estimated_duration_minutes INTEGER;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS actual_duration_min INTEGER;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS completion_notes TEXT;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS travel_start_time TEXT;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_in_time TEXT;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_out_time TEXT;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_in_lat DOUBLE PRECISION;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_in_lng DOUBLE PRECISION;
+      ALTER TABLE jobs ADD COLUMN IF NOT EXISTS invoice_id TEXT;
+
+      ALTER TABLE estimates ADD COLUMN IF NOT EXISTS converted_job_id TEXT;
+      ALTER TABLE estimates ADD COLUMN IF NOT EXISTS converted_invoice_id TEXT;
+
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS etims_control_code TEXT;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS etims_cu_serial_number TEXT;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS etims_data JSONB;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS deposit_amount DOUBLE PRECISION;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_amount DOUBLE PRECISION;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_paid DOUBLE PRECISION;
+    `);
+
+    // Migrate inventory_transactions old column names if they exist and product_id is null
+    await poolInstance.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'inventory_transactions' AND column_name = 'productid') THEN
+          UPDATE inventory_transactions SET product_id = productid WHERE product_id IS NULL;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'inventory_transactions' AND column_name = 'warehouseid') THEN
+          UPDATE inventory_transactions SET warehouse_id = warehouseid WHERE warehouse_id IS NULL;
+        END IF;
+      END $$;
+    `);
+
+    // Populate technician avatars from matching users if technician avatar is unset
+    await poolInstance.query(`
+      UPDATE technicians t
+      SET avatar = u.avatar
+      FROM users u
+      WHERE t.user_id = u.id AND t.avatar IS NULL AND u.avatar IS NOT NULL;
+    `);
+  } catch (migErr) {
+    console.warn('[PostgreSQL] Schema migration warning:', migErr);
+  }
 }
 
 async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
@@ -470,8 +528,8 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
   // Technicians
   for (const t of initialTechnicians) {
     await poolInstance.query(
-      `INSERT INTO technicians (id, org_id, user_id, name, phone, email, specialization, vehicle_reg, active_status, current_lat, current_lng, last_location_update, rating, skills)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      `INSERT INTO technicians (id, org_id, user_id, name, phone, email, specialization, vehicle_reg, active_status, current_lat, current_lng, last_location_update, rating, skills, avatar)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        ON CONFLICT (id) DO NOTHING`,
       [
         t.id,
@@ -488,6 +546,7 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
         t.lastLocationUpdate,
         t.rating,
         JSON.stringify(t.skills || []),
+        t.avatar || null,
       ]
     );
   }
