@@ -308,6 +308,16 @@ class DatabaseService {
     return newTech;
   }
 
+  updateTechnician(id: string, updates: Partial<Technician>, actorName = 'Admin'): Technician | null {
+    const index = this.data.technicians.findIndex(t => t.id === id);
+    if (index === -1) return null;
+    const old = this.data.technicians[index];
+    this.data.technicians[index] = { ...old, ...updates };
+    this.logAudit(old.orgId, old.userId, actorName, 'TECHNICIAN_UPDATED', 'Technician', id, old.name, updates.name || old.name);
+    this.scheduleSave();
+    return this.data.technicians[index];
+  }
+
   updateTechnicianStatus(
     id: string,
     status: Technician['activeStatus'],

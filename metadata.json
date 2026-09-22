@@ -1,6 +1,6 @@
 {
   "name": "Fieldnora",
   "description": "Field Service. Done Right. Kenya & Africa Field-Service Operations Center for dispatch, jobs, technician tracking, and payments.",
-  "requestFramePermissions": ["geolocation"],
+  "requestFramePermissions": ["geolocation", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

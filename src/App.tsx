@@ -6,6 +6,7 @@ import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { NotificationDrawer } from './components/common/NotificationDrawer';
 import { AuthModal } from './components/auth/AuthModal';
 import { NewWorkOrderModal } from './components/jobs/NewWorkOrderModal';
+import { UserProfileModal } from './components/profile/UserProfileModal';
 
 // Views
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -97,6 +98,7 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Modals & Drawers */}
+      <UserProfileModal />
       <NewWorkOrderModal />
       <GlobalSearchModal />
       <NotificationDrawer />

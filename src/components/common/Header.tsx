@@ -15,7 +15,9 @@ import {
   Building2,
   Calendar,
   HelpCircle,
-  Cloud
+  Cloud,
+  Camera,
+  User as UserIcon
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -27,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
   const {
     currentOrg,
     organizations,
+    currentUser,
     userRole,
     setUserRole,
     activeTab,
@@ -34,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
     setSearchModalOpen,
     setNotificationDrawerOpen,
     setNewJobModalOpen,
+    setUserProfileModalOpen,
     selectedRegion,
     setSelectedRegion,
     switchOrganization,
@@ -169,21 +173,37 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#3B82F6] rounded-full ring-2 ring-[#0B1118]" />
             </button>
 
-            {/* Dispatcher • Kenya / John Mwangi Profile matching screenshot mrrdB.jpg */}
-            <div className="flex items-center gap-2.5 pl-1 cursor-pointer group">
+            {/* Dispatcher • Kenya / User Profile */}
+            <div
+              id="header-map-user-profile-btn"
+              onClick={() => setUserProfileModalOpen(true)}
+              className="flex items-center gap-2.5 pl-1 cursor-pointer group"
+              title="Click to view & upload profile picture"
+            >
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-[11px] text-slate-400 leading-tight">
-                  Dispatcher • Kenya
+                <span className="text-[11px] text-slate-400 leading-tight capitalize">
+                  {currentUser?.role || 'Dispatcher'} • Kenya
                 </span>
                 <span className="text-xs font-semibold text-white leading-tight group-hover:text-[#14B8A6] transition-colors">
-                  John Mwangi
+                  {currentUser?.name || 'Faith Wanjiku'}
                 </span>
               </div>
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80"
-                alt="John Mwangi"
-                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] transition-all"
-              />
+              <div className="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] bg-slate-800 flex items-center justify-center transition-all">
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[11px] font-bold text-teal-400">
+                    {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'FW'}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
             </div>
           </>
         ) : (
@@ -215,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
             {/* Help icon button '?' */}
             <button
               onClick={() => {
-                alert('Fieldnora Dispatch Operations Center\n\n• Drag and drop work orders between columns\n• Click any card to inspect and update details\n• View live technician GPS status on the right panel\n• Fast search across jobs and field technicians');
+                alert('Fieldnora Dispatch Operations Center\n\n• Drag and drop work orders between columns\n• Click any card to inspect and update details\n• View live technician GPS status on the right panel\n• Fast search across jobs and field technicians\n• Click your profile avatar to upload your profile picture');
               }}
               className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors"
               title="Dispatch Guide & Shortcuts"
@@ -223,23 +243,35 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
               <HelpCircle className="w-4 h-4" />
             </button>
 
-            {/* User Profile Badge */}
+            {/* User Profile Badge (Click to open UserProfileModal) */}
             <div
-              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+              id="header-user-profile-badge"
+              onClick={() => setUserProfileModalOpen(true)}
               className="flex items-center gap-2.5 pl-1 cursor-pointer group"
-              title="Operations Admin Settings"
+              title="Click to view & upload profile picture"
             >
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80"
-                alt="Daniel K."
-                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] transition-all"
-              />
+              <div className="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-[#1E293B] group-hover:ring-[#14B8A6] bg-slate-800 flex items-center justify-center transition-all">
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[11px] font-bold text-teal-400">
+                    {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'FW'}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-white leading-tight group-hover:text-[#14B8A6] transition-colors">
-                  Daniel K.
+                <span className="text-xs font-semibold text-white leading-tight group-hover:text-[#14B8A6] transition-colors flex items-center gap-1">
+                  {currentUser?.name || 'Faith Wanjiku'}
                 </span>
-                <span className="text-[11px] text-slate-400 leading-tight">
-                  Operations Admin
+                <span className="text-[11px] text-slate-400 leading-tight capitalize">
+                  {currentUser?.role ? `${currentUser.role} Operations` : 'Operations Admin'}
                 </span>
               </div>
             </div>

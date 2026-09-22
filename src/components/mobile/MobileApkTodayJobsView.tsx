@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Navigation,
@@ -15,6 +15,7 @@ import {
   Check,
   ArrowLeft,
   Camera,
+  Upload,
   Plus,
   ShieldCheck,
   ExternalLink,
@@ -287,7 +288,7 @@ const INITIAL_MOBILE_JOBS: MobileJobItem[] = [
 ];
 
 export const MobileApkTodayJobsView: React.FC = () => {
-  const { showToast } = useApp();
+  const { showToast, currentUser, setUserProfileModalOpen, uploadCurrentUserAvatar } = useApp();
 
   // Active Bottom Nav Tab inside the mobile app
   const [mobileNavTab, setMobileNavTab] = useState<'home' | 'jobs' | 'map' | 'profile'>('home');
@@ -319,19 +320,57 @@ export const MobileApkTodayJobsView: React.FC = () => {
   // Frame presentation mode: Phone bezel vs full screen
   const [frameMode, setFrameMode] = useState<boolean>(true);
 
-  // Simulated technician profile
+  // File upload input ref for technician mobile avatar upload
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Dynamic technician profile connected to currentUser
   const technicianProfile = {
-    name: 'John Mwangi',
-    role: 'Lead Field Specialist',
+    name: currentUser?.name || 'John Mwangi',
+    role: currentUser?.role ? `${currentUser.role.toUpperCase()} · Field Specialist` : 'Lead Field Specialist',
     vehicleReg: 'KDL 812B (Toyota Probox)',
     batteryPct: 61,
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+    avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
     online: true,
     nairobiBranch: 'Nairobi Central & Westlands',
     todayDate: '24 May 2025',
     activeJobsCount: 3,
     enRouteCount: 1,
     completedTodayCount: 2,
+  };
+
+  const handleMobileAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file', 'warning');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const size = Math.min(img.width, img.height);
+        canvas.width = 360;
+        canvas.height = 360;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const sx = (img.width - size) / 2;
+          const sy = (img.height - size) / 2;
+          ctx.drawImage(img, sx, sy, size, size, 0, 0, 360, 360);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          await uploadCurrentUserAvatar(dataUrl);
+          showToast('Profile picture uploaded successfully!', 'success');
+        }
+        setIsUploadingPhoto(false);
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   // Filtered jobs list based on filter pill / metric selection
@@ -1281,15 +1320,51 @@ export const MobileApkTodayJobsView: React.FC = () => {
             {/* TAB 4: TECHNICIAN PROFILE */}
             {mobileNavTab === 'profile' && (
               <div className="space-y-4">
+                <input
+                  ref={mobileFileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={handleMobileAvatarUpload}
+                />
+
                 <div className="text-center p-4 bg-[#0F1622] rounded-2xl border border-[#1A2635] space-y-2">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden mx-auto border-2 border-[#14B8A6]">
+                  <div
+                    onClick={() => mobileFileInputRef.current?.click()}
+                    className="relative w-20 h-20 rounded-full overflow-hidden mx-auto border-2 border-[#14B8A6] cursor-pointer group shadow-lg"
+                    title="Tap to change profile picture"
+                  >
                     <img
                       src={technicianProfile.avatar}
                       alt={technicianProfile.name}
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity text-[10px] font-semibold gap-0.5">
+                      <Camera className="w-4 h-4 text-teal-400" />
+                      <span>{isUploadingPhoto ? 'Uploading...' : 'Change'}</span>
+                    </div>
                   </div>
-                  <h3 className="text-base font-bold text-white">{technicianProfile.name}</h3>
+
+                  <div className="flex justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => mobileFileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600/80 hover:bg-teal-600 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{isUploadingPhoto ? 'Uploading...' : 'Upload Photo'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserProfileModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                    >
+                      <UserIcon className="w-3.5 h-3.5 text-teal-400" />
+                      <span>Full Profile</span>
+                    </button>
+                  </div>
+
+                  <h3 className="text-base font-bold text-white pt-1">{technicianProfile.name}</h3>
                   <p className="text-xs text-teal-400 font-semibold">{technicianProfile.role}</p>
                   <span className="inline-block text-[11px] px-2.5 py-0.5 rounded-full bg-[#0A292D] text-[#14B8A6] border border-[#14B8A6]/30">
                     🟢 Shift Active · {technicianProfile.nairobiBranch}

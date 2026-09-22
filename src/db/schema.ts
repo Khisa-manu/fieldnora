@@ -80,6 +80,7 @@ export const technicians = pgTable('technicians', {
   rating: doublePrecision('rating').default(5.0).notNull(),
   completedJobsCount: integer('completed_jobs_count').default(0),
   skills: jsonb('skills').$type<string[]>().default([]).notNull(),
+  avatar: text('avatar'),
 });
 
 export const jobs = pgTable('jobs', {

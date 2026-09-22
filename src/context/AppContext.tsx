@@ -41,18 +41,25 @@ interface AppContextType {
   toasts: Toast[];
   isOnline: boolean;
   newJobModalOpen: boolean;
+  userProfileModalOpen: boolean;
   selectedRegion: string;
+  users: User[];
   setActiveTab: (tab: ActiveTab) => void;
   setTechnicianViewMode: (mode: boolean) => void;
   setSearchModalOpen: (open: boolean) => void;
   setNotificationDrawerOpen: (open: boolean) => void;
   setAuthModalOpen: (open: boolean) => void;
   setNewJobModalOpen: (open: boolean) => void;
+  setUserProfileModalOpen: (open: boolean) => void;
   setSelectedRegion: (region: string) => void;
   setUserRole: (role: UserRole) => void;
   switchOrganization: (orgId: string) => Promise<void>;
   createOrganization: (name: string, county: string) => Promise<void>;
   markNotificationAsRead: (id: string) => Promise<void>;
+  uploadCurrentUserAvatar: (avatarDataUrl: string) => Promise<boolean>;
+  removeCurrentUserAvatar: () => Promise<boolean>;
+  updateCurrentUserProfile: (updates: Partial<User>) => Promise<boolean>;
+  switchUser: (userId: string) => void;
   showToast: (message: string, type?: Toast['type']) => void;
   refreshAppData: () => Promise<void>;
 }
@@ -63,12 +70,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [userRole, setUserRoleState] = useState<UserRole>('admin');
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [technicianViewMode, setTechnicianViewMode] = useState<boolean>(false);
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false);
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [userProfileModalOpen, setUserProfileModalOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isOnline] = useState<boolean>(true);
@@ -90,10 +99,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const activeOrg = orgs.find(o => o.id === currentOrg?.id) || orgs[0];
       if (activeOrg) {
         setCurrentOrg(activeOrg);
-        const users = await api.getUsers();
-        const me = users.find(u => u.role === userRole) || users[0];
+        const fetchedUsers = await api.getUsers();
+        setUsers(fetchedUsers);
+        // Find existing selected user or first matching role
+        const me = fetchedUsers.find(u => u.id === currentUser?.id) ||
+                   fetchedUsers.find(u => u.role === userRole) ||
+                   fetchedUsers[0];
         if (me) {
           setCurrentUser(me);
+          setUserRoleState(me.role);
           setApiContext(activeOrg.id, `${me.name} (${me.role})`);
         }
       }
@@ -101,6 +115,75 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setNotifications(notifs);
     } catch (err) {
       console.error('Failed to load initial app context:', err);
+    }
+  };
+
+  const switchUser = (userId: string) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (targetUser) {
+      setCurrentUser(targetUser);
+      setUserRoleState(targetUser.role);
+      if (currentOrg) {
+        setApiContext(currentOrg.id, `${targetUser.name} (${targetUser.role})`);
+      }
+      showToast(`Switched active profile to ${targetUser.name} (${targetUser.role.toUpperCase()})`, 'info');
+      if (targetUser.role === 'technician') {
+        setActiveTab('technician');
+      }
+    }
+  };
+
+  const uploadCurrentUserAvatar = async (avatarDataUrl: string): Promise<boolean> => {
+    if (!currentUser) {
+      showToast('No active user logged in', 'error');
+      return false;
+    }
+    try {
+      const res = await api.uploadUserAvatar(currentUser.id, avatarDataUrl);
+      if (res && res.user) {
+        setCurrentUser(res.user);
+        setUsers(prev => prev.map(u => (u.id === res.user.id ? res.user : u)));
+        showToast('Profile picture uploaded successfully!', 'success');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      showToast(err.message || 'Failed to upload profile picture', 'error');
+      return false;
+    }
+  };
+
+  const removeCurrentUserAvatar = async (): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      const res = await api.removeUserAvatar(currentUser.id);
+      if (res && res.user) {
+        setCurrentUser(res.user);
+        setUsers(prev => prev.map(u => (u.id === res.user.id ? res.user : u)));
+        showToast('Profile picture removed', 'info');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      showToast(err.message || 'Failed to remove profile picture', 'error');
+      return false;
+    }
+  };
+
+  const updateCurrentUserProfile = async (updates: Partial<User>): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      const updated = await api.updateUser(currentUser.id, updates);
+      if (updated) {
+        setCurrentUser(updated);
+        setUsers(prev => prev.map(u => (u.id === updated.id ? updated : u)));
+        showToast('Profile information updated', 'success');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile', 'error');
+      return false;
     }
   };
 
@@ -173,18 +256,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toasts,
         isOnline,
         newJobModalOpen,
+        userProfileModalOpen,
         selectedRegion,
+        users,
         setActiveTab,
         setTechnicianViewMode,
         setSearchModalOpen,
         setNotificationDrawerOpen,
         setAuthModalOpen,
         setNewJobModalOpen,
+        setUserProfileModalOpen,
         setSelectedRegion,
         setUserRole,
         switchOrganization,
         createOrganization,
         markNotificationAsRead,
+        uploadCurrentUserAvatar,
+        removeCurrentUserAvatar,
+        updateCurrentUserProfile,
+        switchUser,
         showToast,
         refreshAppData,
       }}

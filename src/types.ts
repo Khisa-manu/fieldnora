@@ -196,6 +196,7 @@ export interface Technician {
   rating: number;
   completedJobsCount?: number;
   skills: string[];
+  avatar?: string;
 }
 
 export interface LineItem {

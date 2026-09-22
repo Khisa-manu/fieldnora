@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import { db } from './db';
+import { drizzleDb as db } from './drizzleDb';
+import { db as fallbackDb } from './db';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -22,15 +23,17 @@ function getActorName(req: Request): string {
 // ----------------------------------------------------
 // 1. AUTHENTICATION & ORGANIZATIONS
 // ----------------------------------------------------
-apiRouter.post('/auth/login', (req: Request, res: Response) => {
+apiRouter.post('/auth/login', async (req: Request, res: Response) => {
   const { email, phone, identifier, password } = req.body;
   const inputStr = (identifier || email || phone || '').toString().trim();
   const inputLower = inputStr.toLowerCase();
   const cleanInputPhone = inputStr.replace(/[^0-9]/g, '');
 
   const orgId = getOrgId(req);
-  const users = db.getUsers(orgId);
-  const orgTechs = db.getTechnicians(orgId);
+  const [users, orgTechs] = await Promise.all([
+    db.getUsers(orgId),
+    db.getTechnicians(orgId),
+  ]);
 
   // Helper to match user or technician
   let user = users.find(u => {
@@ -63,7 +66,9 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
 
   if (!user) {
     // Fallback: check all users across orgs
-    const allUsers = db.getOrganizations().flatMap(o => db.getUsers(o.id));
+    const orgs = await db.getOrganizations();
+    const allUsersArrays = await Promise.all(orgs.map(o => db.getUsers(o.id)));
+    const allUsers = allUsersArrays.flat();
     const matched = allUsers.find(u => {
       if (u.email.toLowerCase() === inputLower) return true;
       if (u.id.toLowerCase() === inputLower) return true;
@@ -72,8 +77,10 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
     });
 
     if (matched) {
-      const org = db.getOrganizationById(matched.orgId);
-      const allTechs = db.getTechnicians(matched.orgId);
+      const [org, allTechs] = await Promise.all([
+        db.getOrganizationById(matched.orgId),
+        db.getTechnicians(matched.orgId),
+      ]);
       const tech = allTechs.find(t => t.userId === matched.id || t.email.toLowerCase() === matched.email.toLowerCase());
       return res.json({
         token: 'token-' + crypto.randomUUID(),
@@ -85,7 +92,7 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Invalid technician credentials. Please check your email, phone, or technician ID.' });
   }
 
-  const org = db.getOrganizationById(user.orgId);
+  const org = await db.getOrganizationById(user.orgId);
   if (!technician) {
     technician = orgTechs.find(t => t.userId === user?.id || t.email.toLowerCase() === user?.email.toLowerCase());
   }
@@ -162,14 +169,16 @@ apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
 });
 
 // Technician & User Registration
-apiRouter.post('/auth/register', (req: Request, res: Response) => {
+apiRouter.post('/auth/register', async (req: Request, res: Response) => {
   const { name, email, phone, specialization, vehicleReg, password, orgId, companyName } = req.body;
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required for registration.' });
   }
 
   const cleanEmail = email.toString().trim().toLowerCase();
-  const allUsers = db.getOrganizations().flatMap(o => db.getUsers(o.id));
+  const orgs = await db.getOrganizations();
+  const allUsersArrays = await Promise.all(orgs.map(o => db.getUsers(o.id)));
+  const allUsers = allUsersArrays.flat();
   const existingUser = allUsers.find(u => u.email.toLowerCase() === cleanEmail);
   if (existingUser) {
     return res.status(400).json({ error: 'An account with this email already exists. Please sign in instead.' });
@@ -177,14 +186,13 @@ apiRouter.post('/auth/register', (req: Request, res: Response) => {
 
   // Resolve target organization
   let targetOrgId = orgId || getOrgId(req);
-  let org = db.getOrganizationById(targetOrgId);
+  let org = await db.getOrganizationById(targetOrgId);
   if (!org) {
-    const orgs = db.getOrganizations();
     if (orgs.length > 0) {
       org = orgs[0];
       targetOrgId = org.id;
     } else {
-      org = db.createOrganization({
+      org = await db.createOrganization({
         name: companyName || 'Nairobi Prime Technical Services Ltd',
         slug: 'nairobi-prime',
         phone: phone || '+254 712 345 678',
@@ -204,7 +212,7 @@ apiRouter.post('/auth/register', (req: Request, res: Response) => {
   const userRole = req.body.role === 'admin' ? 'admin' : 'technician';
 
   // Create User
-  const newUser = db.createUser({
+  const newUser = await db.createUser({
     orgId: targetOrgId,
     name: name.trim(),
     email: cleanEmail,
@@ -220,7 +228,7 @@ apiRouter.post('/auth/register', (req: Request, res: Response) => {
       ? [specialization, 'Diagnostics', 'Field Maintenance', 'Safety Protocol']
       : ['General Maintenance', 'Inspection', 'Emergency Callouts'];
 
-    newTechnician = db.createTechnician({
+    newTechnician = await db.createTechnician({
       orgId: targetOrgId,
       userId: newUser.id,
       name: newUser.name,
@@ -245,7 +253,7 @@ apiRouter.post('/auth/register', (req: Request, res: Response) => {
   });
 });
 
-apiRouter.post('/auth/signup', (req: Request, res: Response) => {
+apiRouter.post('/auth/signup', async (req: Request, res: Response) => {
   const { name, email, phone, companyName, county, specialization, vehicleReg, role } = req.body;
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required.' });
@@ -255,9 +263,10 @@ apiRouter.post('/auth/signup', (req: Request, res: Response) => {
   if (role === 'technician' || specialization || !companyName) {
     const cleanEmail = email.toString().trim().toLowerCase();
     const targetOrgId = getOrgId(req);
-    const org = db.getOrganizationById(targetOrgId) || db.getOrganizations()[0];
+    const orgs = await db.getOrganizations();
+    const org = (await db.getOrganizationById(targetOrgId)) || orgs[0];
 
-    const newUser = db.createUser({
+    const newUser = await db.createUser({
       orgId: org.id,
       name: name.trim(),
       email: cleanEmail,
@@ -266,7 +275,7 @@ apiRouter.post('/auth/signup', (req: Request, res: Response) => {
       status: 'active',
     });
 
-    const newTech = db.createTechnician({
+    const newTech = await db.createTechnician({
       orgId: org.id,
       userId: newUser.id,
       name: newUser.name,
@@ -290,7 +299,7 @@ apiRouter.post('/auth/signup', (req: Request, res: Response) => {
   }
 
   const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const newOrg = db.createOrganization({
+  const newOrg = await db.createOrganization({
     name: companyName,
     slug,
     phone: phone || '+254 700 000 000',
@@ -303,7 +312,7 @@ apiRouter.post('/auth/signup', (req: Request, res: Response) => {
     eTimsEnabled: true,
   });
 
-  const adminUser = db.createUser({
+  const adminUser = await db.createUser({
     orgId: newOrg.id,
     name,
     email,
@@ -324,13 +333,13 @@ apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
   res.json({ success: true, message: `Password reset instructions sent to ${email}` });
 });
 
-apiRouter.get('/organizations', (req: Request, res: Response) => {
-  res.json(db.getOrganizations());
+apiRouter.get('/organizations', async (req: Request, res: Response) => {
+  res.json(await db.getOrganizations());
 });
 
-apiRouter.post('/organizations', (req: Request, res: Response) => {
+apiRouter.post('/organizations', async (req: Request, res: Response) => {
   const { name, phone, email, address, county } = req.body;
-  const newOrg = db.createOrganization({
+  const newOrg = await db.createOrganization({
     name: name || 'New Workspace',
     slug: (name || 'new').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     phone: phone || '+254 700 000 000',
@@ -345,20 +354,171 @@ apiRouter.post('/organizations', (req: Request, res: Response) => {
   res.status(201).json(newOrg);
 });
 
-apiRouter.get('/users', (req: Request, res: Response) => {
+apiRouter.get('/users', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getUsers(orgId));
+  res.json(await db.getUsers(orgId));
 });
 
-apiRouter.post('/users/invite', (req: Request, res: Response) => {
+apiRouter.get('/users/me', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const { name, email, phone, role } = req.body;
-  const newUser = db.createUser({
+  const users = await db.getUsers(orgId);
+  const userIdHeader = req.headers['x-user-id'] as string;
+  const userNameHeader = req.headers['x-user-name'] as string;
+
+  let current = null;
+  if (userIdHeader) {
+    current = users.find(u => u.id === userIdHeader);
+  }
+  if (!current && userNameHeader) {
+    const rawName = userNameHeader.split('(')[0].trim().toLowerCase();
+    current = users.find(u => u.name.toLowerCase().includes(rawName) || rawName.includes(u.name.toLowerCase()));
+  }
+  if (!current) {
+    current = users[0];
+  }
+
+  if (!current) {
+    return res.status(404).json({ error: 'No user found' });
+  }
+
+  res.json(current);
+});
+
+apiRouter.get('/users/:id', async (req: Request, res: Response) => {
+  const user = await db.getUserById(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
+});
+
+apiRouter.put('/users/:id', async (req: Request, res: Response) => {
+  const actorName = getActorName(req);
+  const { name, email, phone, role, status, avatar } = req.body;
+
+  const updates: any = {};
+  if (name !== undefined) updates.name = name;
+  if (email !== undefined) updates.email = email;
+  if (phone !== undefined) updates.phone = phone;
+  if (role !== undefined) updates.role = role;
+  if (status !== undefined) updates.status = status;
+  if (avatar !== undefined) updates.avatar = avatar;
+
+  const updatedUser = await db.updateUser(req.params.id, updates);
+  if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+  // Sync avatar and name to technician record if linked
+  if (avatar !== undefined || name !== undefined || phone !== undefined || email !== undefined) {
+    const orgId = getOrgId(req);
+    const techs = await db.getTechnicians(orgId);
+    const linkedTech = techs.find(t => t.userId === req.params.id || t.email.toLowerCase() === updatedUser.email.toLowerCase());
+    if (linkedTech) {
+      await db.updateTechnician(linkedTech.id, {
+        ...(avatar !== undefined && { avatar }),
+        ...(name !== undefined && { name }),
+        ...(phone !== undefined && { phone }),
+        ...(email !== undefined && { email }),
+      }, actorName);
+    }
+  }
+
+  await db.logAudit(
+    updatedUser.orgId,
+    updatedUser.id,
+    actorName,
+    'USER_PROFILE_UPDATED',
+    'User',
+    updatedUser.id,
+    '',
+    `Profile updated for ${updatedUser.name}`
+  );
+
+  res.json(updatedUser);
+});
+
+// Dedicated Profile Picture Upload Endpoint
+apiRouter.post('/users/:id/avatar', async (req: Request, res: Response) => {
+  const { avatar } = req.body;
+  const actorName = getActorName(req);
+
+  if (!avatar || typeof avatar !== 'string') {
+    return res.status(400).json({ error: 'Valid avatar image string (data URL or image URL) is required' });
+  }
+
+  // Update user avatar
+  const updatedUser = await db.updateUser(req.params.id, { avatar });
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Synchronize avatar to corresponding technician record if user is a technician
+  const orgId = getOrgId(req);
+  const techs = await db.getTechnicians(orgId);
+  const linkedTech = techs.find(t => t.userId === req.params.id || t.email.toLowerCase() === updatedUser.email.toLowerCase());
+  if (linkedTech) {
+    await db.updateTechnician(linkedTech.id, { avatar }, actorName);
+  }
+
+  await db.logAudit(
+    updatedUser.orgId,
+    updatedUser.id,
+    actorName,
+    'USER_AVATAR_UPLOADED',
+    'User',
+    updatedUser.id,
+    '',
+    `Profile picture updated for ${updatedUser.name}`
+  );
+
+  res.json({
+    success: true,
+    message: 'Profile picture updated successfully',
+    avatar: updatedUser.avatar,
+    user: updatedUser,
+  });
+});
+
+apiRouter.delete('/users/:id/avatar', async (req: Request, res: Response) => {
+  const actorName = getActorName(req);
+  const updatedUser = await db.updateUser(req.params.id, { avatar: '' });
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Also remove from technician record if linked
+  const orgId = getOrgId(req);
+  const techs = await db.getTechnicians(orgId);
+  const linkedTech = techs.find(t => t.userId === req.params.id || t.email.toLowerCase() === updatedUser.email.toLowerCase());
+  if (linkedTech) {
+    await db.updateTechnician(linkedTech.id, { avatar: '' }, actorName);
+  }
+
+  await db.logAudit(
+    updatedUser.orgId,
+    updatedUser.id,
+    actorName,
+    'USER_AVATAR_REMOVED',
+    'User',
+    updatedUser.id,
+    '',
+    `Profile picture removed for ${updatedUser.name}`
+  );
+
+  res.json({
+    success: true,
+    message: 'Profile picture removed successfully',
+    user: updatedUser,
+  });
+});
+
+apiRouter.post('/users/invite', async (req: Request, res: Response) => {
+  const orgId = getOrgId(req);
+  const { name, email, phone, role, avatar } = req.body;
+  const newUser = await db.createUser({
     orgId,
     name,
     email,
     phone: phone || '',
     role: role || 'technician',
+    avatar: avatar || undefined,
     status: 'invited',
   });
   res.status(201).json(newUser);
@@ -367,18 +527,18 @@ apiRouter.post('/users/invite', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 2. DASHBOARD
 // ----------------------------------------------------
-apiRouter.get('/dashboard', (req: Request, res: Response) => {
+apiRouter.get('/dashboard', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const stats = db.getDashboardStats(orgId);
+  const stats = await db.getDashboardStats(orgId);
   res.json(stats);
 });
 
 // ----------------------------------------------------
 // 3. CUSTOMERS / CRM
 // ----------------------------------------------------
-apiRouter.get('/customers', (req: Request, res: Response) => {
+apiRouter.get('/customers', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  let customers = db.getCustomers(orgId);
+  let customers = await db.getCustomers(orgId);
 
   const q = (req.query.q as string || '').toLowerCase();
   const tag = req.query.tag as string;
@@ -406,18 +566,25 @@ apiRouter.get('/customers', (req: Request, res: Response) => {
   res.json(customers);
 });
 
-apiRouter.get('/customers/:id', (req: Request, res: Response) => {
+apiRouter.get('/customers/:id', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const customer = db.getCustomerById(req.params.id);
+  const customer = await db.getCustomerById(req.params.id);
   if (!customer || customer.orgId !== orgId) {
     return res.status(404).json({ error: 'Customer not found' });
   }
 
   // Include full customer history
-  const jobs = db.getJobs(orgId).filter(j => j.customerId === customer.id);
-  const estimates = db.getEstimates(orgId).filter(e => e.customerId === customer.id);
-  const invoices = db.getInvoices(orgId).filter(i => i.customerId === customer.id);
-  const payments = db.getPayments(orgId).filter(p => p.customerId === customer.id);
+  const [allJobs, allEstimates, allInvoices, allPayments] = await Promise.all([
+    db.getJobs(orgId),
+    db.getEstimates(orgId),
+    db.getInvoices(orgId),
+    db.getPayments(orgId),
+  ]);
+
+  const jobs = allJobs.filter(j => j.customerId === customer.id);
+  const estimates = allEstimates.filter(e => e.customerId === customer.id);
+  const invoices = allInvoices.filter(i => i.customerId === customer.id);
+  const payments = allPayments.filter(p => p.customerId === customer.id);
 
   res.json({
     customer,
@@ -428,12 +595,12 @@ apiRouter.get('/customers/:id', (req: Request, res: Response) => {
   });
 });
 
-apiRouter.post('/customers', (req: Request, res: Response) => {
+apiRouter.post('/customers', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const customerData = req.body;
 
-  const newCustomer = db.createCustomer(
+  const newCustomer = await db.createCustomer(
     {
       orgId,
       type: customerData.type || 'individual',
@@ -466,16 +633,16 @@ apiRouter.post('/customers', (req: Request, res: Response) => {
   res.status(201).json(newCustomer);
 });
 
-apiRouter.put('/customers/:id', (req: Request, res: Response) => {
+apiRouter.put('/customers/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const updated = db.updateCustomer(req.params.id, req.body, actorName);
+  const updated = await db.updateCustomer(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Customer not found' });
   res.json(updated);
 });
 
-apiRouter.delete('/customers/:id', (req: Request, res: Response) => {
+apiRouter.delete('/customers/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const success = db.deleteCustomer(req.params.id, actorName);
+  const success = await db.deleteCustomer(req.params.id, actorName);
   if (!success) return res.status(404).json({ error: 'Customer not found' });
   res.json({ success: true });
 });
@@ -485,7 +652,7 @@ apiRouter.delete('/customers/:id', (req: Request, res: Response) => {
 // ----------------------------------------------------
 
 function enrichJob(job: any, customer?: any): any {
-  const cust = customer || db.getCustomerById(job.customerId) || {
+  const cust = customer || (job.customerId ? fallbackDb.getCustomerById(job.customerId) : undefined) || {
     id: job.customerId || 'cust-generic',
     name: 'Customer Site',
     companyName: '',
@@ -554,9 +721,14 @@ function enrichJob(job: any, customer?: any): any {
   };
 }
 
-apiRouter.get('/jobs', (req: Request, res: Response) => {
+apiRouter.get('/jobs', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  let jobs = db.getJobs(orgId);
+  const [allJobs, allCustomers] = await Promise.all([
+    db.getJobs(orgId),
+    db.getCustomers(orgId),
+  ]);
+  const custMap = new Map(allCustomers.map(c => [c.id, c]));
+  let jobs = allJobs;
 
   const status = req.query.status as string;
   const technicianId = req.query.technicianId as string;
@@ -586,19 +758,22 @@ apiRouter.get('/jobs', (req: Request, res: Response) => {
   }
 
   // Enrich each job with customer data and mobile-friendly fields
-  const enrichedJobs = jobs.map(j => enrichJob(j));
+  const enrichedJobs = jobs.map(j => enrichJob(j, custMap.get(j.customerId)));
   res.json(enrichedJobs);
 });
 
-apiRouter.get('/jobs/:id', (req: Request, res: Response) => {
+apiRouter.get('/jobs/:id', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const job = db.getJobById(req.params.id);
+  const job = await db.getJobById(req.params.id);
   if (!job || job.orgId !== orgId) {
     return res.status(404).json({ error: 'Job not found' });
   }
 
-  const customer = db.getCustomerById(job.customerId);
-  const technicians = db.getTechnicians(orgId).filter(t => job.assignedTechnicianIds.includes(t.id));
+  const [customer, allTechs] = await Promise.all([
+    db.getCustomerById(job.customerId),
+    db.getTechnicians(orgId),
+  ]);
+  const technicians = allTechs.filter(t => job.assignedTechnicianIds.includes(t.id));
   const enriched = enrichJob(job, customer);
 
   // Return structure supporting both Kotlin Retrofit (direct Job object) and Web Dashboard ({ job, customer, technicians })
@@ -610,12 +785,12 @@ apiRouter.get('/jobs/:id', (req: Request, res: Response) => {
   });
 });
 
-apiRouter.post('/jobs', (req: Request, res: Response) => {
+apiRouter.post('/jobs', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const jobData = req.body;
 
-  const newJob = db.createJob(
+  const newJob = await db.createJob(
     {
       orgId,
       customerId: jobData.customerId,
@@ -645,15 +820,17 @@ apiRouter.post('/jobs', (req: Request, res: Response) => {
     actorName
   );
 
-  const enriched = enrichJob(newJob);
+  const customer = await db.getCustomerById(newJob.customerId);
+  const enriched = enrichJob(newJob, customer);
   res.status(201).json(enriched);
 });
 
-apiRouter.put('/jobs/:id', (req: Request, res: Response) => {
+apiRouter.put('/jobs/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const updated = db.updateJob(req.params.id, req.body, actorName);
+  const updated = await db.updateJob(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  const enriched = enrichJob(updated);
+  const customer = await db.getCustomerById(updated.customerId);
+  const enriched = enrichJob(updated, customer);
   res.json({
     ...enriched,
     job: enriched,
@@ -661,7 +838,7 @@ apiRouter.put('/jobs/:id', (req: Request, res: Response) => {
 });
 
 // Update Job Status (supports both PATCH /jobs/:id/status and POST /jobs/:id/status from Android/Web)
-const updateJobStatusHandler = (req: Request, res: Response) => {
+const updateJobStatusHandler = async (req: Request, res: Response) => {
   const { status, notes, latitude, longitude } = req.body;
   const actorName = getActorName(req);
   const now = new Date().toISOString();
@@ -678,10 +855,11 @@ const updateJobStatusHandler = (req: Request, res: Response) => {
     if (notes) updateData.completionNotes = notes;
   }
 
-  const updated = db.updateJob(req.params.id, updateData, actorName);
+  const updated = await db.updateJob(req.params.id, updateData, actorName);
   if (!updated) return res.status(404).json({ error: 'Job not found' });
 
-  const enriched = enrichJob(updated);
+  const customer = await db.getCustomerById(updated.customerId);
+  const enriched = enrichJob(updated, customer);
   res.json({
     ...enriched,
     job: enriched,
@@ -692,12 +870,12 @@ apiRouter.patch('/jobs/:id/status', updateJobStatusHandler);
 apiRouter.post('/jobs/:id/status', updateJobStatusHandler);
 
 // Technician mobile workflow actions
-apiRouter.post('/jobs/:id/check-in', (req: Request, res: Response) => {
+apiRouter.post('/jobs/:id/check-in', async (req: Request, res: Response) => {
   const { latitude, longitude } = req.body;
   const actorName = getActorName(req);
   const now = new Date().toISOString();
 
-  const updated = db.updateJob(
+  const updated = await db.updateJob(
     req.params.id,
     {
       status: 'on_site',
@@ -709,21 +887,22 @@ apiRouter.post('/jobs/:id/check-in', (req: Request, res: Response) => {
   );
 
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  const enriched = enrichJob(updated);
+  const customer = await db.getCustomerById(updated.customerId);
+  const enriched = enrichJob(updated, customer);
   res.json({
     ...enriched,
     job: enriched,
   });
 });
 
-apiRouter.post('/jobs/:id/signature', (req: Request, res: Response) => {
+apiRouter.post('/jobs/:id/signature', async (req: Request, res: Response) => {
   const signerName = req.body.signedBy || req.body.signerName || 'Customer Authorized Signatory';
   const dataUrl = req.body.signatureBase64 || req.body.dataUrl || 'data:image/svg+xml;base64,signature';
   const customerAcceptedNotes = req.body.notes || req.body.customerAcceptedNotes || 'Work inspected and approved.';
   const actorName = getActorName(req);
   const now = new Date().toISOString();
 
-  const updated = db.updateJob(
+  const updated = await db.updateJob(
     req.params.id,
     {
       status: 'completed',
@@ -739,16 +918,17 @@ apiRouter.post('/jobs/:id/signature', (req: Request, res: Response) => {
   );
 
   if (!updated) return res.status(404).json({ error: 'Job not found' });
-  const enriched = enrichJob(updated);
+  const customer = await db.getCustomerById(updated.customerId);
+  const enriched = enrichJob(updated, customer);
   res.json({
     ...enriched,
     job: enriched,
   });
 });
 
-apiRouter.post('/jobs/:id/photos', (req: Request, res: Response) => {
+apiRouter.post('/jobs/:id/photos', async (req: Request, res: Response) => {
   const { url, caption, phase, latitude, longitude } = req.body;
-  const job = db.getJobById(req.params.id);
+  const job = await db.getJobById(req.params.id);
   if (!job) return res.status(404).json({ error: 'Job not found' });
 
   const newPhoto = {
@@ -762,22 +942,53 @@ apiRouter.post('/jobs/:id/photos', (req: Request, res: Response) => {
   };
 
   const updatedPhotos = [...job.photos, newPhoto];
-  const updated = db.updateJob(job.id, { photos: updatedPhotos }, getActorName(req));
+  const updated = await db.updateJob(job.id, { photos: updatedPhotos }, getActorName(req));
   res.json(updated);
 });
 
 // ----------------------------------------------------
 // 5. TECHNICIANS & GPS TRACKING
 // ----------------------------------------------------
-apiRouter.get('/technicians', (req: Request, res: Response) => {
+apiRouter.get('/technicians', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getTechnicians(orgId));
+  res.json(await db.getTechnicians(orgId));
 });
 
-apiRouter.post('/technicians/:id/location', (req: Request, res: Response) => {
+apiRouter.post('/technicians/:id/location', async (req: Request, res: Response) => {
   const { status, latitude, longitude } = req.body;
   const actorName = getActorName(req);
-  const updated = db.updateTechnicianStatus(req.params.id, status, latitude, longitude, actorName);
+  const updated = await db.updateTechnicianStatus(req.params.id, status, latitude, longitude, actorName);
+  if (!updated) return res.status(404).json({ error: 'Technician not found' });
+  res.json(updated);
+});
+
+apiRouter.post('/technicians/:id/avatar', async (req: Request, res: Response) => {
+  const { avatar } = req.body;
+  const actorName = getActorName(req);
+
+  if (!avatar || typeof avatar !== 'string') {
+    return res.status(400).json({ error: 'Valid avatar image is required' });
+  }
+
+  const updatedTech = await db.updateTechnician(req.params.id, { avatar }, actorName);
+  if (!updatedTech) return res.status(404).json({ error: 'Technician not found' });
+
+  // Sync to linked user record
+  if (updatedTech.userId) {
+    await db.updateUser(updatedTech.userId, { avatar });
+  }
+
+  res.json({
+    success: true,
+    message: 'Technician profile picture updated successfully',
+    avatar: updatedTech.avatar,
+    technician: updatedTech,
+  });
+});
+
+apiRouter.put('/technicians/:id', async (req: Request, res: Response) => {
+  const actorName = getActorName(req);
+  const updated = await db.updateTechnician(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Technician not found' });
   res.json(updated);
 });
@@ -785,27 +996,27 @@ apiRouter.post('/technicians/:id/location', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 6. ESTIMATES / QUOTATIONS
 // ----------------------------------------------------
-apiRouter.get('/estimates', (req: Request, res: Response) => {
+apiRouter.get('/estimates', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getEstimates(orgId));
+  res.json(await db.getEstimates(orgId));
 });
 
-apiRouter.get('/estimates/:id', (req: Request, res: Response) => {
+apiRouter.get('/estimates/:id', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const estimate = db.getEstimateById(req.params.id);
+  const estimate = await db.getEstimateById(req.params.id);
   if (!estimate || estimate.orgId !== orgId) {
     return res.status(404).json({ error: 'Estimate not found' });
   }
-  const customer = db.getCustomerById(estimate.customerId);
+  const customer = await db.getCustomerById(estimate.customerId);
   res.json({ estimate, customer });
 });
 
-apiRouter.post('/estimates', (req: Request, res: Response) => {
+apiRouter.post('/estimates', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const est = req.body;
 
-  const newEstimate = db.createEstimate(
+  const newEstimate = await db.createEstimate(
     {
       orgId,
       customerId: est.customerId,
@@ -828,23 +1039,23 @@ apiRouter.post('/estimates', (req: Request, res: Response) => {
   res.status(201).json(newEstimate);
 });
 
-apiRouter.put('/estimates/:id', (req: Request, res: Response) => {
+apiRouter.put('/estimates/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const updated = db.updateEstimate(req.params.id, req.body, actorName);
+  const updated = await db.updateEstimate(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Estimate not found' });
   res.json(updated);
 });
 
-apiRouter.post('/estimates/:id/convert-job', (req: Request, res: Response) => {
+apiRouter.post('/estimates/:id/convert-job', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const job = db.convertEstimateToJob(req.params.id, actorName);
+  const job = await db.convertEstimateToJob(req.params.id, actorName);
   if (!job) return res.status(400).json({ error: 'Could not convert estimate to job' });
   res.status(201).json(job);
 });
 
-apiRouter.post('/estimates/:id/convert-invoice', (req: Request, res: Response) => {
+apiRouter.post('/estimates/:id/convert-invoice', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const invoice = db.convertEstimateToInvoice(req.params.id, actorName);
+  const invoice = await db.convertEstimateToInvoice(req.params.id, actorName);
   if (!invoice) return res.status(400).json({ error: 'Could not convert estimate to invoice' });
   res.status(201).json(invoice);
 });
@@ -852,30 +1063,32 @@ apiRouter.post('/estimates/:id/convert-invoice', (req: Request, res: Response) =
 // ----------------------------------------------------
 // 7. INVOICING
 // ----------------------------------------------------
-apiRouter.get('/invoices', (req: Request, res: Response) => {
+apiRouter.get('/invoices', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getInvoices(orgId));
+  res.json(await db.getInvoices(orgId));
 });
 
-apiRouter.get('/invoices/:id', (req: Request, res: Response) => {
+apiRouter.get('/invoices/:id', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const invoice = db.getInvoiceById(req.params.id);
+  const invoice = await db.getInvoiceById(req.params.id);
   if (!invoice || invoice.orgId !== orgId) {
     return res.status(404).json({ error: 'Invoice not found' });
   }
-  const customer = db.getCustomerById(invoice.customerId);
-  const payments = db.getPayments(orgId).filter(p => p.invoiceId === invoice.id);
+  const [customer, payments] = await Promise.all([
+    db.getCustomerById(invoice.customerId),
+    db.getPayments(orgId).then(list => list.filter(p => p.invoiceId === invoice.id)),
+  ]);
   res.json({ invoice, customer, payments });
 });
 
-apiRouter.post('/invoices', (req: Request, res: Response) => {
+apiRouter.post('/invoices', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const inv = req.body;
 
   const controlCode = `eTIMS-NBO-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
-  const newInvoice = db.createInvoice(
+  const newInvoice = await db.createInvoice(
     {
       orgId,
       customerId: inv.customerId,
@@ -908,9 +1121,9 @@ apiRouter.post('/invoices', (req: Request, res: Response) => {
   res.status(201).json(newInvoice);
 });
 
-apiRouter.put('/invoices/:id', (req: Request, res: Response) => {
+apiRouter.put('/invoices/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const updated = db.updateInvoice(req.params.id, req.body, actorName);
+  const updated = await db.updateInvoice(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Invoice not found' });
   res.json(updated);
 });
@@ -918,20 +1131,20 @@ apiRouter.put('/invoices/:id', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 8. PAYMENTS & M-PESA DARAJA INTEGRATION
 // ----------------------------------------------------
-apiRouter.get('/payments', (req: Request, res: Response) => {
+apiRouter.get('/payments', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getPayments(orgId));
+  res.json(await db.getPayments(orgId));
 });
 
-apiRouter.post('/payments', (req: Request, res: Response) => {
+apiRouter.post('/payments', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const { invoiceId, amount, paymentMethod, reference, phoneNumber, notes } = req.body;
 
-  const invoice = db.getInvoiceById(invoiceId);
+  const invoice = await db.getInvoiceById(invoiceId);
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
 
-  const result = db.recordPayment(
+  const result = await db.recordPayment(
     {
       orgId,
       invoiceId,
@@ -956,7 +1169,7 @@ apiRouter.post('/payments/mpesa/stk-push', async (req: Request, res: Response) =
   const actorName = getActorName(req);
   const { invoiceId, phoneNumber, amount } = req.body;
 
-  const invoice = db.getInvoiceById(invoiceId);
+  const invoice = await db.getInvoiceById(invoiceId);
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
 
   // Clean phone number (format 2547XXXXXXXX)
@@ -982,7 +1195,7 @@ apiRouter.post('/payments/mpesa/stk-push', async (req: Request, res: Response) =
   const mpesaReceiptCode = 'Q' + randomChars;
 
   // In simulated / test sandbox environment, immediately record payment and reconcile invoice
-  const paymentResult = db.recordPayment(
+  const paymentResult = await db.recordPayment(
     {
       orgId,
       invoiceId: invoice.id,
@@ -1011,9 +1224,9 @@ apiRouter.post('/payments/mpesa/stk-push', async (req: Request, res: Response) =
 // ----------------------------------------------------
 // 9. INVENTORY
 // ----------------------------------------------------
-apiRouter.get('/inventory', (req: Request, res: Response) => {
+apiRouter.get('/inventory', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const products = db.getProducts(orgId);
+  const products = await db.getProducts(orgId);
   const mapped = products.map(p => ({
     id: p.id,
     sku: p.sku,
@@ -1030,91 +1243,91 @@ apiRouter.get('/inventory', (req: Request, res: Response) => {
   res.json(mapped);
 });
 
-apiRouter.get('/inventory/products', (req: Request, res: Response) => {
+apiRouter.get('/inventory/products', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getProducts(orgId));
+  res.json(await db.getProducts(orgId));
 });
 
-apiRouter.post('/inventory/products', (req: Request, res: Response) => {
+apiRouter.post('/inventory/products', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
-  const newProduct = db.createProduct({ ...req.body, orgId }, actorName);
+  const newProduct = await db.createProduct({ ...req.body, orgId }, actorName);
   res.status(201).json(newProduct);
 });
 
-apiRouter.put('/inventory/products/:id', (req: Request, res: Response) => {
+apiRouter.put('/inventory/products/:id', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
-  const updated = db.updateProduct(req.params.id, req.body, actorName);
+  const updated = await db.updateProduct(req.params.id, req.body, actorName);
   if (!updated) return res.status(404).json({ error: 'Product not found' });
   res.json(updated);
 });
 
-apiRouter.post('/inventory/adjust', (req: Request, res: Response) => {
+apiRouter.post('/inventory/adjust', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
   const { productId, quantity, notes } = req.body;
-  const updated = db.adjustInventory(orgId, productId, Number(quantity), notes || 'Manual adjustment', actorName);
+  const updated = await db.adjustInventory(orgId, productId, Number(quantity), notes || 'Manual adjustment', actorName);
   if (!updated) return res.status(404).json({ error: 'Product not found' });
   res.json(updated);
 });
 
-apiRouter.get('/inventory/warehouses', (req: Request, res: Response) => {
+apiRouter.get('/inventory/warehouses', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getWarehouses(orgId));
+  res.json(await db.getWarehouses(orgId));
 });
 
-apiRouter.get('/inventory/transactions', (req: Request, res: Response) => {
+apiRouter.get('/inventory/transactions', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getInventoryTransactions(orgId));
+  res.json(await db.getInventoryTransactions(orgId));
 });
 
 // ----------------------------------------------------
 // 10. FORMS & CHECKLISTS
 // ----------------------------------------------------
-apiRouter.get('/forms', (req: Request, res: Response) => {
+apiRouter.get('/forms', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getForms(orgId));
+  res.json(await db.getForms(orgId));
 });
 
-apiRouter.post('/forms', (req: Request, res: Response) => {
+apiRouter.post('/forms', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
-  const newForm = db.createForm({ ...req.body, orgId }, actorName);
+  const newForm = await db.createForm({ ...req.body, orgId }, actorName);
   res.status(201).json(newForm);
 });
 
-apiRouter.get('/forms/submissions', (req: Request, res: Response) => {
+apiRouter.get('/forms/submissions', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const jobId = req.query.jobId as string;
-  res.json(db.getFormSubmissions(orgId, jobId));
+  res.json(await db.getFormSubmissions(orgId, jobId));
 });
 
-apiRouter.post('/forms/submissions', (req: Request, res: Response) => {
+apiRouter.post('/forms/submissions', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const actorName = getActorName(req);
-  const submission = db.submitForm({ ...req.body, orgId, submittedBy: actorName }, actorName);
+  const submission = await db.submitForm({ ...req.body, orgId, submittedBy: actorName }, actorName);
   res.status(201).json(submission);
 });
 
 // ----------------------------------------------------
 // 11. NOTIFICATIONS
 // ----------------------------------------------------
-apiRouter.get('/notifications', (req: Request, res: Response) => {
+apiRouter.get('/notifications', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getNotifications(orgId));
+  res.json(await db.getNotifications(orgId));
 });
 
-apiRouter.post('/notifications/:id/read', (req: Request, res: Response) => {
-  db.markNotificationRead(req.params.id);
+apiRouter.post('/notifications/:id/read', async (req: Request, res: Response) => {
+  await db.markNotificationRead(req.params.id);
   res.json({ success: true });
 });
 
-apiRouter.post('/notifications/send', (req: Request, res: Response) => {
+apiRouter.post('/notifications/send', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const { channel, recipient, message, title } = req.body;
 
   // Log in notification center
-  const notif = db.createNotification(
+  const notif = await db.createNotification(
     orgId,
     title || `Outbound ${channel.toUpperCase()}`,
     `Sent to ${recipient}: "${message.slice(0, 80)}..."`,
@@ -1132,15 +1345,15 @@ apiRouter.post('/notifications/send', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 12. AUDIT LOGS
 // ----------------------------------------------------
-apiRouter.get('/audit-logs', (req: Request, res: Response) => {
+apiRouter.get('/audit-logs', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  res.json(db.getAuditLogs(orgId));
+  res.json(await db.getAuditLogs(orgId));
 });
 
 // ----------------------------------------------------
 // 13. GLOBAL SEARCH
 // ----------------------------------------------------
-apiRouter.get('/search', (req: Request, res: Response) => {
+apiRouter.get('/search', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const q = (req.query.q as string || '').toLowerCase().trim();
 
@@ -1148,22 +1361,31 @@ apiRouter.get('/search', (req: Request, res: Response) => {
     return res.json({ customers: [], jobs: [], estimates: [], invoices: [], technicians: [], products: [] });
   }
 
-  const customers = db.getCustomers(orgId).filter(
+  const [allCusts, allJobs, allEsts, allInvs, allTechs, allProds] = await Promise.all([
+    db.getCustomers(orgId),
+    db.getJobs(orgId),
+    db.getEstimates(orgId),
+    db.getInvoices(orgId),
+    db.getTechnicians(orgId),
+    db.getProducts(orgId),
+  ]);
+
+  const customers = allCusts.filter(
     c => c.name.toLowerCase().includes(q) || (c.companyName && c.companyName.toLowerCase().includes(q)) || c.phone.includes(q)
   );
-  const jobs = db.getJobs(orgId).filter(
+  const jobs = allJobs.filter(
     j => j.jobNumber.toLowerCase().includes(q) || j.title.toLowerCase().includes(q) || j.description.toLowerCase().includes(q)
   );
-  const estimates = db.getEstimates(orgId).filter(
+  const estimates = allEsts.filter(
     e => e.estimateNumber.toLowerCase().includes(q) || (e.title && e.title.toLowerCase().includes(q))
   );
-  const invoices = db.getInvoices(orgId).filter(
+  const invoices = allInvs.filter(
     i => i.invoiceNumber.toLowerCase().includes(q)
   );
-  const technicians = db.getTechnicians(orgId).filter(
+  const technicians = allTechs.filter(
     t => t.name.toLowerCase().includes(q) || t.specialization.toLowerCase().includes(q) || t.phone.includes(q)
   );
-  const products = db.getProducts(orgId).filter(
+  const products = allProds.filter(
     p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
   );
 
@@ -1180,14 +1402,16 @@ apiRouter.get('/search', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 14. REPORTS & ANALYTICS
 // ----------------------------------------------------
-apiRouter.get('/reports', (req: Request, res: Response) => {
+apiRouter.get('/reports', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const jobs = db.getJobs(orgId);
-  const invoices = db.getInvoices(orgId);
-  const payments = db.getPayments(orgId);
-  const technicians = db.getTechnicians(orgId);
-  const products = db.getProducts(orgId);
-  const customers = db.getCustomers(orgId);
+  const [jobs, invoices, payments, technicians, products, customers] = await Promise.all([
+    db.getJobs(orgId),
+    db.getInvoices(orgId),
+    db.getPayments(orgId),
+    db.getTechnicians(orgId),
+    db.getProducts(orgId),
+    db.getCustomers(orgId),
+  ]);
 
   // Revenue by month
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -1283,9 +1507,14 @@ apiRouter.get('/mobile/download-zip', (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 14. SYSTEM & MOBILE CLIENT CONFIG
 // ----------------------------------------------------
-apiRouter.get('/system/status', (req: Request, res: Response) => {
+apiRouter.get('/system/status', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
   const pgStatus = getPostgresConnectionStatus();
+  const [jobs, technicians] = await Promise.all([
+    db.getJobs(orgId),
+    db.getTechnicians(orgId),
+  ]);
+
   res.json({
     status: 'online',
     service: 'fieldnora-core-api',
@@ -1302,8 +1531,8 @@ apiRouter.get('/system/status', (req: Request, res: Response) => {
         ? `Connected to ${pgStatus.provider} PostgreSQL database via Drizzle ORM`
         : (pgStatus.error || 'DATABASE_URL not configured. Provide DATABASE_URL to connect to Neon or Railway Postgres.')
     },
-    totalJobs: db.getJobs(orgId).length,
-    activeTechnicians: db.getTechnicians(orgId).length,
+    totalJobs: jobs.length,
+    activeTechnicians: technicians.length,
   });
 });
 

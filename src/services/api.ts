@@ -73,7 +73,23 @@ export const api = {
     }),
 
   getUsers: () => request<User[]>('/users'),
-  inviteUser: (data: { name: string; email: string; phone: string; role: string }) =>
+  getMe: () => request<User>('/users/me'),
+  getUserById: (id: string) => request<User>(`/users/${id}`),
+  updateUser: (id: string, updates: Partial<User>) =>
+    request<User>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+  uploadUserAvatar: (id: string, avatar: string) =>
+    request<{ success: boolean; message: string; avatar: string; user: User }>(`/users/${id}/avatar`, {
+      method: 'POST',
+      body: JSON.stringify({ avatar }),
+    }),
+  removeUserAvatar: (id: string) =>
+    request<{ success: boolean; message: string; user: User }>(`/users/${id}/avatar`, {
+      method: 'DELETE',
+    }),
+  inviteUser: (data: { name: string; email: string; phone: string; role: string; avatar?: string }) =>
     request<User>('/users/invite', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -184,6 +200,16 @@ export const api = {
 
   // Technicians
   getTechnicians: () => request<Technician[]>('/technicians'),
+  updateTechnician: (id: string, data: Partial<Technician>) =>
+    request<Technician>(`/technicians/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  uploadTechnicianAvatar: (id: string, avatar: string) =>
+    request<{ success: boolean; message: string; avatar: string; technician: Technician }>(`/technicians/${id}/avatar`, {
+      method: 'POST',
+      body: JSON.stringify({ avatar }),
+    }),
   updateTechnicianLocation: (id: string, data: { status: Technician['activeStatus']; latitude?: number; longitude?: number }) =>
     request<Technician>(`/technicians/${id}/location`, {
       method: 'POST',
