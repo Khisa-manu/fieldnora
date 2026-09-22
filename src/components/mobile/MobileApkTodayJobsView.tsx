@@ -457,7 +457,11 @@ export const MobileApkTodayJobsView: React.FC = () => {
     const query = encodeURIComponent(`${job.customerName}, ${job.address}`);
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}&query=${query}`;
     showToast(`Launching GPS Navigation to ${job.location}...`, 'info');
-    window.open(mapsUrl, '_blank');
+    try {
+      window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      showToast('Maps navigation link prepared. Please allow popups if blocked.', 'info');
+    }
   };
 
   const handleCall = (job: MobileJobItem, e?: React.MouseEvent) => {
@@ -477,7 +481,11 @@ export const MobileApkTodayJobsView: React.FC = () => {
     const greeting = `Habari ${job.customerName}! This is ${technicianProfile.name} from Fieldnora. I am currently attending to your work order ${job.jobNumber} (${job.title}) at ${job.location}. Please let me know if you need any specific updates.`;
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(greeting)}`;
     showToast(`Opening WhatsApp dispatch chat for ${job.customerName}...`, 'success');
-    window.open(waUrl, '_blank');
+    try {
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      showToast('WhatsApp link prepared. Please allow popups if blocked.', 'info');
+    }
   };
 
   // Status transitions inside Job Detail

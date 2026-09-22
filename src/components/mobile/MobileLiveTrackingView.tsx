@@ -118,7 +118,11 @@ export const MobileLiveTrackingView: React.FC<MobileLiveTrackingViewProps> = ({
     showToast('Starting GPS Navigation to Riverside Drive...', 'success');
     // Open Google Maps intent in new tab
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=-1.2921,36.7865&destination=-1.2635,36.8020&travelmode=driving`;
-    window.open(mapsUrl, '_blank');
+    try {
+      window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      showToast('Maps navigation link prepared. Please allow popups if blocked.', 'info');
+    }
   };
 
   // Coordinates mapping on the custom SVG map (Kilimani to Nairobi CBD)

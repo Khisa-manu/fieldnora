@@ -19,7 +19,8 @@ import {
   Camera,
   User as UserIcon,
   LogOut,
-  ArrowRightLeft
+  ArrowRightLeft,
+  X
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -50,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
   const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [eatTime, setEatTime] = useState<string>('');
 
   // Live EAT (East Africa Time: UTC+3) Clock matching screenshot: "• EAT 15:42"
@@ -238,10 +240,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
 
             {/* Help icon button '?' */}
             <button
-              onClick={() => {
-                alert('Fieldnora Dispatch Operations Center\n\n• Drag and drop work orders between columns\n• Click any card to inspect and update details\n• View live technician GPS status on the right panel\n• Fast search across jobs and field technicians\n• Click your profile avatar to upload your profile picture');
-              }}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors"
+              onClick={() => setHelpModalOpen(true)}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-[#16202C] border border-[#1E293B] transition-colors cursor-pointer"
               title="Dispatch Guide & Shortcuts"
             >
               <HelpCircle className="w-4 h-4" />
@@ -362,6 +362,70 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
           <span className="hidden md:inline text-[11px]">Sign out</span>
         </button>
       </div>
+
+      {/* Dispatch Operations Guide Modal */}
+      {helpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-[#111A24] border border-[#1E293B] rounded-2xl shadow-2xl p-6 text-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => setHelpModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#16202C] transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-teal-950/80 border border-teal-800/60 flex items-center justify-center text-teal-400">
+                <HelpCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Operations Center Guide</h3>
+                <p className="text-xs text-slate-400">Fieldnora Dispatch & Operations Shortcuts</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="p-3 rounded-xl bg-[#0B1118] border border-[#1E293B]/80 space-y-2">
+                <div className="font-semibold text-teal-400 flex items-center gap-1.5">
+                  <span>• Drag & Drop Dispatch Board</span>
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  Move work orders smoothly between Unassigned, Scheduled, En Route, In Progress, and Completed columns.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#0B1118] border border-[#1E293B]/80 space-y-2">
+                <div className="font-semibold text-teal-400 flex items-center gap-1.5">
+                  <span>• Live GPS & Fleet Locations</span>
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  Inspect real-time Nairobi coordinates for active technicians (Kilimani, Westlands, Upper Hill, Industrial Area).
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#0B1118] border border-[#1E293B]/80 space-y-2">
+                <div className="font-semibold text-teal-400 flex items-center gap-1.5">
+                  <span>• Fast Search & Profile Switching</span>
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  Press Search icon or click your avatar to upload profile pictures, switch role accounts, or sign out to the login page.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-[#1E293B] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setHelpModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-[#14B8A6] hover:bg-[#0D9488] text-slate-950 font-bold text-xs transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

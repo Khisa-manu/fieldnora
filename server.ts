@@ -47,6 +47,15 @@ async function startServer() {
     res.status(404).json({ error: `API endpoint ${req.method} ${req.url} not found` });
   });
 
+  // Global error handler for API routes
+  app.use('/api', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('[Fieldnora API Error Handler]', err);
+    res.status(err.status || 500).json({
+      error: err.message || 'Internal Server Error',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Vite middleware for development vs static serve for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
