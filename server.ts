@@ -8,7 +8,9 @@ import { initPostgresDatabase, getPostgresConnectionStatus } from './server/post
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.DEFAULT_APP_PORT
+    ? parseInt(process.env.DEFAULT_APP_PORT, 10)
+    : (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
 
   // Initialize PostgreSQL + Drizzle ORM if DATABASE_URL is provided
   initPostgresDatabase().catch(err => {
@@ -57,7 +59,11 @@ async function startServer() {
   });
 
   // Vite middleware for development vs static serve for production
-  if (process.env.NODE_ENV !== 'production') {
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    (typeof __filename !== 'undefined' && __filename.includes('dist'));
+
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
