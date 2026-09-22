@@ -33,6 +33,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   headers.set('Content-Type', 'application/json');
   headers.set('x-org-id', currentOrgId);
   headers.set('x-user-name', currentUserName);
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) headers.set('x-timezone', tz);
+  } catch {}
 
   const res = await fetch(`/api${endpoint}`, {
     ...options,
@@ -53,10 +57,41 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth & Orgs
-  login: (credentials: { email: string; password?: string }) =>
-    request<{ token: string; user: User; organization: Organization }>('/auth/login', {
+  login: (credentials: { email: string; password?: string; identifier?: string }) =>
+    request<{ token: string; user: User; technician?: Technician | null; organization: Organization }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    }),
+
+  logout: () =>
+    request<{ success: boolean; message: string }>('/auth/logout', {
+      method: 'POST',
+    }),
+
+  requestAccess: (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    companyName?: string;
+    county?: string;
+    estimatedTeamSize?: string;
+    notes?: string;
+  }) =>
+    request<{ success: boolean; message: string; requestId?: string }>('/auth/request-access', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  forgotPassword: (identifier: string) =>
+    request<{ success: boolean; message: string; otp?: string; destination?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ identifier }),
+    }),
+
+  resetPassword: (data: { identifier: string; code: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 
   signup: (data: { name: string; email: string; phone: string; companyName: string; county: string }) =>
@@ -99,17 +134,23 @@ export const api = {
   getDashboard: () =>
     request<{
       todayJobsCount: number;
+      todayActiveJobsCount?: number;
+      activeJobsCount?: number;
+      completedTodayCount?: number;
       upcomingJobsCount: number;
       unassignedJobsCount: number;
       inProgressJobsCount: number;
       completedJobsCount: number;
       totalJobsCount: number;
       totalRevenue: number;
+      outstandingRevenue?: number;
       outstandingPayments: number;
       overdueInvoicesCount: number;
       totalCustomersCount: number;
+      onlineTechniciansCount?: number;
       activeTechniciansCount: number;
       totalTechniciansCount: number;
+      urgentJobsCount?: number;
       statusCounts: Record<string, number>;
       recentActivity: AuditLog[];
       todayJobs: Job[];
@@ -151,12 +192,22 @@ export const api = {
     }),
 
   // Jobs
-  getJobs: (params?: { status?: string; technicianId?: string; priority?: string; date?: string; q?: string }) => {
+  getJobs: (params?: {
+    status?: string;
+    technicianId?: string;
+    priority?: string;
+    date?: string;
+    scope?: string;
+    activeOnly?: boolean | string;
+    q?: string;
+  }) => {
     const query = new URLSearchParams();
     if (params?.status) query.set('status', params.status);
     if (params?.technicianId) query.set('technicianId', params.technicianId);
     if (params?.priority) query.set('priority', params.priority);
     if (params?.date) query.set('date', params.date);
+    if (params?.scope) query.set('scope', params.scope);
+    if (params?.activeOnly) query.set('activeOnly', String(params.activeOnly));
     if (params?.q) query.set('q', params.q);
     return request<Job[]>(`/jobs?${query.toString()}`);
   },

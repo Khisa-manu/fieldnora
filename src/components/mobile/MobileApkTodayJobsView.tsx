@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { api } from '../../services/api';
 import {
   Navigation,
   Phone,
@@ -302,6 +303,65 @@ export const MobileApkTodayJobsView: React.FC = () => {
   // List of jobs
   const [jobs, setJobs] = useState<MobileJobItem[]>(INITIAL_MOBILE_JOBS);
 
+  // Fetch live active jobs from API
+  useEffect(() => {
+    let isMounted = true;
+    api.getJobs({ scope: 'today_active' })
+      .then(liveJobs => {
+        if (!isMounted || !liveJobs || liveJobs.length === 0) return;
+        setJobs(prev => {
+          const map = new Map<string, MobileJobItem>();
+          for (const item of prev) {
+            map.set(item.jobNumber, item);
+          }
+          for (const j of liveJobs) {
+            let status: MobileJobItem['status'] = 'in_progress';
+            let statusLabel = 'In Progress';
+            if (j.status === 'en_route') {
+              status = 'en_route';
+              statusLabel = 'En Route';
+            } else if (j.status === 'on_site') {
+              status = 'on_site';
+              statusLabel = 'On Site';
+            } else if (j.status === 'completed') {
+              status = 'completed';
+              statusLabel = 'Completed';
+            } else if (j.status === 'scheduled' || j.status === 'assigned' || j.status === 'new') {
+              status = 'in_progress';
+              statusLabel = 'Scheduled';
+            }
+
+            const existing = map.get(j.jobNumber);
+            map.set(j.jobNumber, {
+              id: j.id,
+              jobNumber: j.jobNumber,
+              customerName: (j as any).customer?.name || existing?.customerName || 'Commercial Client',
+              location: (j as any).customer?.county || existing?.location || 'Nairobi Central',
+              address: (j as any).customer?.address || existing?.address || 'Nairobi',
+              timeRange: j.startTime ? `${j.startTime} – ${j.endTime || '17:00'}` : (existing?.timeRange || 'Today'),
+              status: existing ? existing.status : status,
+              statusLabel: existing ? existing.statusLabel : statusLabel,
+              title: j.title,
+              description: j.description || existing?.description || 'Field service work order.',
+              phone: (j as any).customer?.phone || existing?.phone || '0712 345 678',
+              latitude: j.checkInLat || existing?.latitude || -1.2635,
+              longitude: j.checkInLng || existing?.longitude || 36.8020,
+              priceKes: existing?.priceKes || 8500,
+              checklist: existing?.checklist || (j.checklist?.map(c => ({ id: c.id, label: (c as any).label || (c as any).title || 'Task', done: Boolean(c.completed || (c as any).checked) })) || []),
+              photos: existing?.photos || [],
+              materials: existing?.materials || (j.materials?.map(m => ({ id: m.id, name: m.name, qty: m.quantity, unitPrice: m.unitPrice })) || []),
+            });
+          }
+          return Array.from(map.values());
+        });
+      })
+      .catch(err => console.warn('Mobile jobs live load note:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Selected job for detailed on-site execution
   const [selectedJob, setSelectedJob] = useState<MobileJobItem | null>(null);
 
@@ -333,10 +393,10 @@ export const MobileApkTodayJobsView: React.FC = () => {
     avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
     online: true,
     nairobiBranch: 'Nairobi Central & Westlands',
-    todayDate: '24 May 2025',
-    activeJobsCount: 3,
-    enRouteCount: 1,
-    completedTodayCount: 2,
+    todayDate: 'Today (EAT)',
+    activeJobsCount: jobs.filter(j => j.status === 'en_route' || j.status === 'on_site' || j.status === 'in_progress').length,
+    enRouteCount: jobs.filter(j => j.status === 'en_route').length,
+    completedTodayCount: jobs.filter(j => j.status === 'completed').length,
   };
 
   const handleMobileAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

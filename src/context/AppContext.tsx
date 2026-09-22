@@ -27,6 +27,8 @@ interface Toast {
 }
 
 interface AppContextType {
+  isAuthenticated: boolean;
+  setIsAuthenticated: (auth: boolean) => void;
   currentOrg: Organization | null;
   organizations: Organization[];
   currentUser: User | null;
@@ -60,6 +62,9 @@ interface AppContextType {
   removeCurrentUserAvatar: () => Promise<boolean>;
   updateCurrentUserProfile: (updates: Partial<User>) => Promise<boolean>;
   switchUser: (userId: string) => void;
+  loginAsRole: (role: 'admin' | 'dispatcher' | 'technician') => Promise<void>;
+  loginWithCredentials: (email: string, password?: string, remember?: boolean) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   showToast: (message: string, type?: Toast['type']) => void;
   refreshAppData: () => Promise<void>;
 }
@@ -67,6 +72,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('fieldnora_auth') === 'true';
+  });
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -239,9 +247,102 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const unreadNotifCount = notifications.filter(n => !n.read).length;
 
+  const loginAsRole = async (role: 'admin' | 'dispatcher' | 'technician') => {
+    try {
+      const orgs = await api.getOrganizations();
+      const fetchedUsers = await api.getUsers();
+      setOrganizations(orgs);
+      setUsers(fetchedUsers);
+      const activeOrg = orgs[0];
+      if (activeOrg) setCurrentOrg(activeOrg);
+
+      const targetUser = fetchedUsers.find(u => u.role === role) || fetchedUsers[0];
+      if (targetUser) {
+        setCurrentUser(targetUser);
+        setUserRoleState(targetUser.role);
+        setIsAuthenticated(true);
+        localStorage.setItem('fieldnora_auth', 'true');
+        localStorage.setItem('fieldnora_user_id', targetUser.id);
+        localStorage.setItem('fieldnora_role', targetUser.role);
+
+        if (activeOrg) {
+          setApiContext(activeOrg.id, `${targetUser.name} (${targetUser.role})`);
+        }
+
+        if (targetUser.role === 'technician') {
+          setActiveTab('technician');
+        } else if (targetUser.role === 'dispatcher') {
+          setActiveTab('dispatch');
+        } else {
+          setActiveTab('dashboard');
+        }
+
+        showToast(`Signed in successfully as ${targetUser.name} (${targetUser.role.toUpperCase()})`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Login failed', 'error');
+    }
+  };
+
+  const loginWithCredentials = async (
+    email: string,
+    password?: string,
+    remember: boolean = true
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await api.login({ email, password });
+      if (res && res.user) {
+        setCurrentUser(res.user);
+        setUserRoleState(res.user.role);
+        if (res.organization) {
+          setCurrentOrg(res.organization);
+          setApiContext(res.organization.id, `${res.user.name} (${res.user.role})`);
+        }
+        setIsAuthenticated(true);
+        if (remember) {
+          localStorage.setItem('fieldnora_auth', 'true');
+          localStorage.setItem('fieldnora_user_id', res.user.id);
+          localStorage.setItem('fieldnora_role', res.user.role);
+        } else {
+          sessionStorage.setItem('fieldnora_auth', 'true');
+        }
+
+        if (res.user.role === 'technician') {
+          setActiveTab('technician');
+        } else if (res.user.role === 'dispatcher') {
+          setActiveTab('dispatch');
+        } else {
+          setActiveTab('dashboard');
+        }
+
+        showToast(`Welcome back, ${res.user.name}! (${res.user.role.toUpperCase()})`, 'success');
+        return { success: true };
+      }
+      return { success: false, error: 'User account not found' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Invalid credentials' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      // ignore
+    }
+    setIsAuthenticated(false);
+    localStorage.removeItem('fieldnora_auth');
+    localStorage.removeItem('fieldnora_user_id');
+    localStorage.removeItem('fieldnora_role');
+    sessionStorage.removeItem('fieldnora_auth');
+    showToast('Signed out of fieldnora', 'info');
+  };
+
   return (
     <AppContext.Provider
       value={{
+        isAuthenticated,
+        setIsAuthenticated,
         currentOrg,
         organizations,
         currentUser,
@@ -275,6 +376,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         removeCurrentUserAvatar,
         updateCurrentUserProfile,
         switchUser,
+        loginAsRole,
+        loginWithCredentials,
+        logout,
         showToast,
         refreshAppData,
       }}

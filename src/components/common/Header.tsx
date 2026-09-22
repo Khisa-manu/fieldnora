@@ -17,7 +17,9 @@ import {
   HelpCircle,
   Cloud,
   Camera,
-  User as UserIcon
+  User as UserIcon,
+  LogOut,
+  ArrowRightLeft
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -41,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
     selectedRegion,
     setSelectedRegion,
     switchOrganization,
+    logout,
+    loginAsRole,
   } = useApp();
 
   const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
@@ -308,26 +312,55 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
           {roleDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-[#111A24] border border-[#1E293B] rounded-xl shadow-2xl py-1 z-50 text-xs">
               <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#1E293B]/70">
-                Simulate Workspace Role
+                Switch Role Account
               </div>
-              {(Object.keys(roleLabels) as UserRole[]).map(r => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    setUserRole(r);
-                    setRoleDropdownOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#16202C] transition-colors ${
-                    userRole === r ? 'text-[#14B8A6] font-semibold bg-[#16202C]/60' : 'text-slate-300'
-                  }`}
-                >
-                  <span>{roleLabels[r].icon}</span>
-                  <span>{roleLabels[r].label}</span>
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  loginAsRole('admin');
+                  setRoleDropdownOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#16202C] text-slate-300 hover:text-teal-400"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span>Admin (Faith Wanjiku)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  loginAsRole('dispatcher');
+                  setRoleDropdownOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#16202C] text-slate-300 hover:text-teal-400"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span>Dispatcher (Kevin Omondi)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  loginAsRole('technician');
+                  setRoleDropdownOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#16202C] text-slate-300 hover:text-teal-400"
+              >
+                <Wrench className="w-3.5 h-3.5 text-teal-400" />
+                <span>Technician (Brian Kiprop)</span>
+              </button>
             </div>
           )}
         </div>
+
+        {/* Header Quick Sign Out Button */}
+        <button
+          id="header-signout-btn"
+          onClick={logout}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111A24] hover:bg-rose-950/40 border border-[#1E293B] hover:border-rose-900/40 text-xs font-medium text-slate-300 hover:text-rose-300 transition-colors cursor-pointer"
+          title="Sign out / Return to login screen"
+        >
+          <LogOut className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden md:inline text-[11px]">Sign out</span>
+        </button>
       </div>
     </header>
   );

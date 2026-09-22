@@ -25,11 +25,17 @@ import { AuditLogsView } from './components/audit/AuditLogsView';
 import { ServicesCatalogView } from './components/services/ServicesCatalogView';
 import { TechnicianMobileView } from './components/technician/TechnicianMobileView';
 import { MobileAppCenterView } from './components/mobile/MobileAppCenterView';
+import { LoginView } from './components/auth/LoginView';
 
 const MainLayout: React.FC = () => {
-  const { activeTab } = useApp();
+  const { activeTab, isAuthenticated } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // If user is not authenticated, show the login experience matching the attachment UI/UX
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   const renderActiveView = () => {
     switch (activeTab) {

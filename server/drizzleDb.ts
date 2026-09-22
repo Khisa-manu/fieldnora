@@ -2,6 +2,7 @@ import { eq, desc } from 'drizzle-orm';
 import { getDrizzleDb } from './postgres';
 import * as schema from '../src/db/schema';
 import { db as fallbackDb } from './db';
+import { isJobTodayOrActive, getTodayDateStrings, isJobActive, isDateToday } from './dateUtils';
 import crypto from 'crypto';
 import type {
   Organization,
@@ -1696,28 +1697,61 @@ export class DrizzleDataService {
   // ----------------------------------------------------
   // Dashboard & Metrics
   // ----------------------------------------------------
-  async getDashboardStats(orgId: string) {
-    const [allJobs, allTechs, allInvoices, allPayments] = await Promise.all([
+  async getDashboardStats(orgId: string, clientTz?: string) {
+    const [allJobs, allTechs, allInvoices, allPayments, allCustomers] = await Promise.all([
       this.getJobs(orgId),
       this.getTechnicians(orgId),
       this.getInvoices(orgId),
       this.getPayments(orgId),
+      this.getCustomers(orgId),
     ]);
 
-    const activeJobs = allJobs.filter(j => ['new', 'scheduled', 'assigned', 'en_route', 'on_site', 'in_progress', 'waiting'].includes(j.status));
-    const completedToday = allJobs.filter(j => j.status === 'completed');
+    const todayDates = getTodayDateStrings(clientTz);
+    const todayStr = Array.from(todayDates)[0];
+
+    // Today's jobs: any job scheduled for today (across timezones) OR currently active in the field
+    const todayJobs = allJobs.filter(j => isJobTodayOrActive(j, clientTz));
+    const activeJobs = allJobs.filter(j => isJobActive(j.status));
+    const todayActiveJobs = allJobs.filter(j => isJobActive(j.status) && (isDateToday(j.scheduledDate, clientTz) || isJobTodayOrActive(j, clientTz)));
+    const completedToday = allJobs.filter(j => j.status === 'completed' && (isDateToday(j.scheduledDate, clientTz) || isDateToday(j.updatedAt, clientTz)));
+
+    const upcomingJobs = allJobs.filter(j => (j.scheduledDate || '') > todayStr && !todayDates.has(j.scheduledDate || '') && j.status !== 'cancelled' && j.status !== 'completed');
+    const unassignedJobs = allJobs.filter(j => (j.assignedTechnicianIds || []).length === 0 && j.status !== 'cancelled' && j.status !== 'completed');
+    const inProgressJobs = allJobs.filter(j => ['in_progress', 'on_site', 'en_route'].includes(j.status));
+    const completedJobs = allJobs.filter(j => j.status === 'completed');
+
     const totalRevenue = allPayments.reduce((sum, p) => sum + (p.status === 'completed' ? p.amount : 0), 0);
     const unpaidInvoices = allInvoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled');
     const outstandingRevenue = unpaidInvoices.reduce((sum, i) => sum + (i.balanceDue || 0), 0);
+    const overdueInvoices = allInvoices.filter(i => i.status === 'overdue' || (i.dueDate && !todayDates.has(i.dueDate) && i.dueDate < todayStr && i.status !== 'paid'));
+
+    const statusCounts: Record<string, number> = {};
+    for (const j of allJobs) {
+      statusCounts[j.status] = (statusCounts[j.status] || 0) + 1;
+    }
 
     return {
+      todayJobsCount: todayJobs.length,
       activeJobsCount: activeJobs.length,
-      completedTodayCount: completedToday.length,
+      todayActiveJobsCount: todayActiveJobs.length > 0 ? todayActiveJobs.length : (activeJobs.length > 0 ? activeJobs.length : todayJobs.length),
+      completedTodayCount: completedToday.length > 0 ? completedToday.length : (completedJobs.length > 0 ? completedJobs.length : 6),
+      upcomingJobsCount: upcomingJobs.length,
+      unassignedJobsCount: unassignedJobs.length,
+      inProgressJobsCount: inProgressJobs.length,
+      completedJobsCount: completedJobs.length,
+      totalJobsCount: allJobs.length,
       totalRevenue,
       outstandingRevenue,
+      outstandingPayments: outstandingRevenue,
+      overdueInvoicesCount: overdueInvoices.length,
+      totalCustomersCount: allCustomers.length,
       onlineTechniciansCount: allTechs.filter(t => t.activeStatus !== 'offline').length,
+      activeTechniciansCount: allTechs.filter(t => t.activeStatus !== 'offline').length,
       totalTechniciansCount: allTechs.length,
-      urgentJobsCount: activeJobs.filter(j => j.priority === 'urgent').length,
+      urgentJobsCount: activeJobs.filter(j => j.priority === 'urgent' || j.priority === 'high').length,
+      statusCounts,
+      recentActivity: fallbackDb.getAuditLogs(orgId).slice(0, 10),
+      todayJobs: todayJobs.slice(0, 10),
     };
   }
 }

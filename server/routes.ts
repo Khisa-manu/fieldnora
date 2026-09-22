@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { drizzleDb as db } from './drizzleDb';
 import { db as fallbackDb } from './db';
+import { isJobTodayOrActive, getTodayDateStrings, isJobActive, isDateToday } from './dateUtils';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -165,6 +166,22 @@ apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Your PIN / Password has been reset successfully. You can now sign in with your new credentials.',
+  });
+});
+
+// Enterprise / Company Access Request
+apiRouter.post('/auth/request-access', async (req: Request, res: Response) => {
+  const { name, email, phone, companyName, county, estimatedTeamSize, notes } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and corporate email are required.' });
+  }
+
+  console.log(`[FieldNora Access Request] New submission from ${name} (${companyName || 'Enterprise'}, ${email}, phone: ${phone || 'N/A'})`);
+
+  res.json({
+    success: true,
+    message: 'Thank you for requesting access to fieldnora. Our Nairobi onboarding team will contact you within 2 business hours.',
+    requestId: 'REQ-' + Date.now().toString().slice(-6),
   });
 });
 
@@ -529,7 +546,8 @@ apiRouter.post('/users/invite', async (req: Request, res: Response) => {
 // ----------------------------------------------------
 apiRouter.get('/dashboard', async (req: Request, res: Response) => {
   const orgId = getOrgId(req);
-  const stats = await db.getDashboardStats(orgId);
+  const clientTz = (req.query.tz || req.headers['x-timezone']) as string;
+  const stats = await db.getDashboardStats(orgId, clientTz);
   res.json(stats);
 });
 
@@ -734,10 +752,26 @@ apiRouter.get('/jobs', async (req: Request, res: Response) => {
   const technicianId = req.query.technicianId as string;
   const priority = req.query.priority as string;
   const date = req.query.date as string;
+  const scope = req.query.scope as string;
+  const activeOnly = req.query.activeOnly as string;
+  const clientTz = (req.query.tz || req.headers['x-timezone']) as string;
   const q = (req.query.q as string || '').toLowerCase();
 
+  // Scope: 'today' or 'today_active'
+  if (scope === 'today_active' || scope === 'today') {
+    jobs = jobs.filter(j => isJobTodayOrActive(j, clientTz));
+  }
+
+  if (activeOnly === 'true') {
+    jobs = jobs.filter(j => isJobActive(j.status));
+  }
+
   if (status) {
-    jobs = jobs.filter(j => j.status === status);
+    if (status === 'active') {
+      jobs = jobs.filter(j => isJobActive(j.status));
+    } else {
+      jobs = jobs.filter(j => j.status === status);
+    }
   }
   if (technicianId) {
     jobs = jobs.filter(j => j.assignedTechnicianIds.includes(technicianId));
@@ -746,7 +780,22 @@ apiRouter.get('/jobs', async (req: Request, res: Response) => {
     jobs = jobs.filter(j => j.priority === priority);
   }
   if (date) {
-    jobs = jobs.filter(j => j.scheduledDate === date);
+    if (date.toLowerCase() === 'today') {
+      jobs = jobs.filter(j => isJobTodayOrActive(j, clientTz));
+    } else {
+      const targetDate = date.includes('T') ? date.split('T')[0] : date.trim();
+      // Match direct date or if it's today's date in client/EAT timezone
+      jobs = jobs.filter(j => {
+        const jDate = (j.scheduledDate || '').split('T')[0];
+        if (jDate === targetDate) return true;
+        // If query asks for today's date in a timezone, check if job is today/active
+        const todayDates = getTodayDateStrings(clientTz);
+        if (todayDates.has(targetDate) && (todayDates.has(jDate) || isJobActive(j.status))) {
+          return true;
+        }
+        return false;
+      });
+    }
   }
   if (q) {
     jobs = jobs.filter(

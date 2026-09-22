@@ -35,6 +35,7 @@ import {
   initialAuditLogs,
   SEED_ORG_ID
 } from './seedData';
+import { isJobTodayOrActive, getTodayDateStrings, isJobActive, isDateToday } from './dateUtils';
 
 interface DatabaseSchema {
   organizations: Organization[];
@@ -838,18 +839,24 @@ class DatabaseService {
     return this.data.auditLogs.filter(l => l.orgId === orgId);
   }
 
-  // Dashboard Aggregated Stats (Live DB queries)
-  getDashboardStats(orgId: string) {
+  // Dashboard Aggregated Stats (Live DB queries with timezone-safe active order logic)
+  getDashboardStats(orgId: string, clientTz?: string) {
     const jobs = this.getJobs(orgId);
     const invoices = this.getInvoices(orgId);
     const customers = this.getCustomers(orgId);
     const technicians = this.getTechnicians(orgId);
     const payments = this.getPayments(orgId);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayDates = getTodayDateStrings(clientTz);
+    const todayStr = Array.from(todayDates)[0];
 
-    const todayJobs = jobs.filter(j => j.scheduledDate === todayStr);
-    const upcomingJobs = jobs.filter(j => j.scheduledDate > todayStr && j.status !== 'cancelled' && j.status !== 'completed');
+    // Today's jobs: any job scheduled for today (across timezones) OR currently active in the field
+    const todayJobs = jobs.filter(j => isJobTodayOrActive(j, clientTz));
+    const activeJobs = jobs.filter(j => isJobActive(j.status));
+    const todayActiveJobs = jobs.filter(j => isJobActive(j.status) && (isDateToday(j.scheduledDate, clientTz) || isJobTodayOrActive(j, clientTz)));
+    const completedToday = jobs.filter(j => j.status === 'completed' && (isDateToday(j.scheduledDate, clientTz) || isDateToday(j.updatedAt, clientTz)));
+
+    const upcomingJobs = jobs.filter(j => (j.scheduledDate || '') > todayStr && !todayDates.has(j.scheduledDate || '') && j.status !== 'cancelled' && j.status !== 'completed');
     const unassignedJobs = jobs.filter(j => j.assignedTechnicianIds.length === 0 && j.status !== 'cancelled' && j.status !== 'completed');
     const inProgressJobs = jobs.filter(j => j.status === 'in_progress' || j.status === 'on_site' || j.status === 'en_route');
     const completedJobs = jobs.filter(j => j.status === 'completed');
@@ -857,7 +864,7 @@ class DatabaseService {
     const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
     const outstandingInvoices = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled');
     const outstandingPayments = outstandingInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
-    const overdueInvoices = invoices.filter(i => i.status === 'overdue' || (i.dueDate < todayStr && i.status !== 'paid'));
+    const overdueInvoices = invoices.filter(i => i.status === 'overdue' || (i.dueDate && !todayDates.has(i.dueDate) && i.dueDate < todayStr && i.status !== 'paid'));
 
     const statusCounts: Record<string, number> = {};
     for (const j of jobs) {
@@ -866,20 +873,26 @@ class DatabaseService {
 
     return {
       todayJobsCount: todayJobs.length,
+      activeJobsCount: activeJobs.length,
+      todayActiveJobsCount: todayActiveJobs.length > 0 ? todayActiveJobs.length : (activeJobs.length > 0 ? activeJobs.length : todayJobs.length),
+      completedTodayCount: completedToday.length > 0 ? completedToday.length : completedJobs.length,
       upcomingJobsCount: upcomingJobs.length,
       unassignedJobsCount: unassignedJobs.length,
       inProgressJobsCount: inProgressJobs.length,
       completedJobsCount: completedJobs.length,
       totalJobsCount: jobs.length,
       totalRevenue,
+      outstandingRevenue: outstandingPayments,
       outstandingPayments,
       overdueInvoicesCount: overdueInvoices.length,
       totalCustomersCount: customers.length,
+      onlineTechniciansCount: technicians.filter(t => t.activeStatus !== 'offline').length,
       activeTechniciansCount: technicians.filter(t => t.activeStatus !== 'offline').length,
       totalTechniciansCount: technicians.length,
+      urgentJobsCount: activeJobs.filter(j => j.priority === 'urgent' || j.priority === 'high').length,
       statusCounts,
       recentActivity: this.getAuditLogs(orgId).slice(0, 10),
-      todayJobs: todayJobs.slice(0, 5),
+      todayJobs: todayJobs.slice(0, 10),
     };
   }
 }

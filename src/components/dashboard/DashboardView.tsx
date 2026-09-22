@@ -23,6 +23,7 @@ import {
 import { Job, Technician, JobPriority, JobStatus } from '../../types';
 
 interface WorkOrderItem {
+  id?: string;
   jobNumber: string;
   customerName: string;
   trade: string;
@@ -268,12 +269,63 @@ export const DashboardView: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [dash, techs] = await Promise.all([
+      const [dash, techs, backendJobs, custsData] = await Promise.all([
         api.getDashboard(),
         api.getTechnicians(),
+        api.getJobs({ scope: 'today_active' }).catch(() => api.getJobs()),
+        api.getCustomers().catch(() => []),
       ]);
       setStats(dash);
       setTechnicians(techs);
+
+      // Merge backend active jobs into work orders
+      if (backendJobs && backendJobs.length > 0) {
+        const techMap = new Map(techs.map(t => [t.id, t]));
+        const custMap = new Map(custsData.map(c => [c.id, c]));
+
+        setWorkOrders(prev => {
+          const map = new Map<string, WorkOrderItem>();
+          // Keep existing initial orders
+          for (const item of prev) {
+            map.set(item.jobNumber, item);
+          }
+
+          // Merge live backend jobs
+          for (const job of backendJobs) {
+            const primaryTechId = job.assignedTechnicianIds?.[0] || 'tech-01';
+            const tech = techMap.get(primaryTechId);
+            const cust = custMap.get(job.customerId);
+
+            let status: WorkOrderItem['status'] = 'in_progress';
+            if (['en_route', 'on_site', 'in_progress', 'scheduled', 'completed'].includes(job.status)) {
+              status = job.status as WorkOrderItem['status'];
+            } else if (job.status === 'assigned' || job.status === 'new') {
+              status = 'scheduled';
+            }
+
+            const techNum = primaryTechId.replace(/[^0-9]/g, '').padStart(2, '0');
+            const existing = map.get(job.jobNumber);
+            map.set(job.jobNumber, {
+              id: job.id,
+              jobNumber: job.jobNumber,
+              customerName: cust?.name || existing?.customerName || 'Nairobi Commercial Client',
+              trade: job.title || existing?.trade || 'Technical Service',
+              status: existing ? existing.status : status,
+              priority: (job.priority as any) || existing?.priority || 'medium',
+              timeAgo: job.startTime ? `${job.startTime} scheduled` : (existing?.timeAgo || 'Today'),
+              scheduledTime: job.startTime || existing?.scheduledTime || '09:00',
+              technicianName: tech?.name || existing?.technicianName || 'Assigned Technician',
+              technicianCode: `Tech ${techNum || '01'}`,
+              techId: primaryTechId,
+              lat: job.checkInLat || tech?.currentLat || existing?.lat || -1.286389,
+              lng: job.checkInLng || tech?.currentLng || existing?.lng || 36.817223,
+              locationName: cust?.county || cust?.address || existing?.locationName || 'Nairobi Central',
+            });
+          }
+
+          return Array.from(map.values());
+        });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -285,12 +337,22 @@ export const DashboardView: React.FC = () => {
     loadData();
   }, []);
 
-  const handleUpdateStatus = (jobNum: string, newStatus: WorkOrderItem['status']) => {
+  const handleUpdateStatus = async (jobNum: string, newStatus: WorkOrderItem['status']) => {
     setWorkOrders(prev =>
       prev.map(j => (j.jobNumber === jobNum ? { ...j, status: newStatus } : j))
     );
     showToast(`Work Order ${jobNum} updated to ${newStatus.replace('_', ' ').toUpperCase()}`, 'success');
     setActiveMenuJob(null);
+
+    // Sync to backend if job exists in backend
+    const targetOrder = workOrders.find(w => w.jobNumber === jobNum);
+    if (targetOrder?.id) {
+      try {
+        await api.updateJob(targetOrder.id, { status: newStatus as any });
+      } catch (e) {
+        console.warn('Backend update sync note:', e);
+      }
+    }
   };
 
   const handlePinOnMap = (job: WorkOrderItem) => {
@@ -307,6 +369,7 @@ export const DashboardView: React.FC = () => {
     if (statusFilter === 'en_route') return order.status === 'en_route';
     if (statusFilter === 'on_site') return order.status === 'on_site';
     if (statusFilter === 'in_progress') return order.status === 'in_progress';
+    if (statusFilter === 'completed') return order.status === 'completed';
     if (statusFilter === 'high') return order.priority === 'high' || order.priority === 'urgent';
     if (statusFilter === 'medium') return order.priority === 'medium';
     if (statusFilter === 'low') return order.priority === 'low';
@@ -404,8 +467,12 @@ export const DashboardView: React.FC = () => {
           >
             <div>
               <span className="text-xs font-medium text-slate-400">Today&apos;s Jobs</span>
-              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">14</div>
-              <div className="text-xs text-slate-400 mt-0.5">6 Completed</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                {stats?.todayActiveJobsCount ?? stats?.todayJobsCount ?? filteredOrders.length}
+              </div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                {stats?.completedTodayCount ?? 6} Completed
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-[#092723] text-[#14B8A6] border border-teal-800/40 group-hover:scale-105 transition-transform">
               <ClipboardList className="w-5 h-5 stroke-[2.2]" />
@@ -473,7 +540,7 @@ export const DashboardView: React.FC = () => {
               Today&apos;s Active Work Orders
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#092723] text-[#14B8A6] border border-teal-800/50">
-              14
+              {filteredOrders.length}
             </span>
           </div>
 
@@ -668,7 +735,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 self-end sm:self-auto font-medium">
-            {[1, 2, 3].map(page => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}

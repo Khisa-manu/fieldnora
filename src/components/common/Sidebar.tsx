@@ -22,7 +22,8 @@ import {
   Calendar,
   User,
   Building2,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapse,
 }) => {
-  const { activeTab, setActiveTab } = useApp();
+  const { activeTab, setActiveTab, currentUser, userRole, logout } = useApp();
   const [moreToolsOpen, setMoreToolsOpen] = useState(false);
 
   // Primary nav items matching the exact UI from the screenshot:
@@ -272,6 +273,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               © 2024 Fieldnora. All rights reserved.
             </div>
           )}
+
+          {/* Sign Out Button */}
+          <button
+            id="sidebar-signout-btn"
+            onClick={logout}
+            className={`w-full flex items-center ${
+              collapsed ? 'justify-center p-2' : 'gap-2 px-2.5 py-1.5'
+            } rounded-lg text-xs font-medium text-rose-400/90 hover:text-rose-200 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 transition-colors`}
+            title="Sign out / Switch user role"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            {!collapsed && <span>Sign out</span>}
+          </button>
 
           {/* Collapse Toggle */}
           <button
