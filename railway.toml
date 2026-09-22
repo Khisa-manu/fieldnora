@@ -1,6 +1,5 @@
 [build]
-builder = "RAILPACK"
-buildCommand = "bun install && bun run build"
+builder = "NIXPACKS"
 
 [deploy]
-startCommand = "bun run start"
+startCommand = "npm run start"
