@@ -33,10 +33,11 @@ import {
 } from 'lucide-react';
 import { Job, Customer, Technician, ProductInventory } from '../../types';
 import { SignaturePad } from '../common/SignaturePad';
+import { CameraModal, CapturedPhotoData } from '../common/CameraModal';
 import { MobileApkTodayJobsView } from '../mobile/MobileApkTodayJobsView';
 
 export const TechnicianMobileView: React.FC = () => {
-  const { showToast, setTechnicianViewMode } = useApp();
+  const { showToast, setTechnicianViewMode, selectedMobileJobId } = useApp();
   const [viewStyle, setViewStyle] = useState<'today_dashboard' | 'legacy_flow'>('today_dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -396,12 +397,38 @@ export const TechnicianMobileView: React.FC = () => {
 
   const mobileFileInputRef = React.useRef<HTMLInputElement>(null);
   const [mobilePhotoPhase, setMobilePhotoPhase] = useState<'before' | 'during' | 'after'>('before');
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+
+  // Sync selected job when dispatched from Dashboard
+  useEffect(() => {
+    if (selectedMobileJobId && jobs.length > 0) {
+      const match = jobs.find(j => j.id === selectedMobileJobId || j.jobNumber === selectedMobileJobId);
+      if (match) {
+        setSelectedJob(match);
+      }
+    }
+  }, [selectedMobileJobId, jobs]);
 
   const handleTriggerMobilePhoto = (phase: 'before' | 'during' | 'after') => {
     setMobilePhotoPhase(phase);
-    if (mobileFileInputRef.current) {
-      mobileFileInputRef.current.value = '';
-      mobileFileInputRef.current.click();
+    setCameraModalOpen(true);
+  };
+
+  const handleCameraModalCapture = async (photo: CapturedPhotoData) => {
+    if (!selectedJob) return;
+    try {
+      const updated = await api.addJobPhoto(selectedJob.id, {
+        url: photo.dataUrl,
+        caption: photo.caption,
+        phase: photo.phase,
+        latitude: photo.latitude,
+        longitude: photo.longitude,
+      });
+      setSelectedJob(updated);
+      setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)));
+      showToast(`Captured ${photo.phase.toUpperCase()} inspection photo with GPS watermark!`, 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Photo upload failed', 'error');
     }
   };
 
@@ -1418,6 +1445,16 @@ export const TechnicianMobileView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Standardized Camera Inspection Modal */}
+      <CameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={handleCameraModalCapture}
+        defaultPhase={mobilePhotoPhase}
+        jobNumber={selectedJob?.jobNumber || 'WO-DEFAULT'}
+        locationName={jobCustomer ? (jobCustomer.area || jobCustomer.address || 'Nairobi') : 'Nairobi'}
+      />
     </div>
   );
 };

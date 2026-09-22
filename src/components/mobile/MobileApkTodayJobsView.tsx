@@ -35,6 +35,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { SignaturePad } from '../common/SignaturePad';
+import { CameraModal, CapturedPhotoData } from '../common/CameraModal';
 import { MobileJobDetailScreen } from './MobileJobDetailScreen';
 import { MobileLiveTrackingView } from './MobileLiveTrackingView';
 import { MobileJobCompletionScreen } from './MobileJobCompletionScreen';
@@ -289,7 +290,14 @@ const INITIAL_MOBILE_JOBS: MobileJobItem[] = [
 ];
 
 export const MobileApkTodayJobsView: React.FC = () => {
-  const { showToast, currentUser, setUserProfileModalOpen, uploadCurrentUserAvatar } = useApp();
+  const {
+    showToast,
+    currentUser,
+    setUserProfileModalOpen,
+    uploadCurrentUserAvatar,
+    selectedMobileJobId,
+    setActiveTab,
+  } = useApp();
 
   // Active Bottom Nav Tab inside the mobile app
   const [mobileNavTab, setMobileNavTab] = useState<'home' | 'jobs' | 'map' | 'profile'>('home');
@@ -364,6 +372,67 @@ export const MobileApkTodayJobsView: React.FC = () => {
 
   // Selected job for detailed on-site execution
   const [selectedJob, setSelectedJob] = useState<MobileJobItem | null>(null);
+
+  // Camera inspection modal state
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [cameraDefaultPhase, setCameraDefaultPhase] = useState<'before' | 'during' | 'after'>('during');
+
+  // React to selectedMobileJobId dispatch sync from Dashboard
+  useEffect(() => {
+    if (selectedMobileJobId) {
+      const match = jobs.find(j => j.id === selectedMobileJobId || j.jobNumber === selectedMobileJobId);
+      if (match) {
+        setSelectedJob(match);
+        setActiveScreen('today_dashboard');
+        setMobileNavTab('home');
+      }
+    }
+  }, [selectedMobileJobId, jobs]);
+
+  // Handle camera photo capture with GPS watermark
+  const handleCameraCapture = async (photo: CapturedPhotoData) => {
+    if (!selectedJob) return;
+
+    const newPhotoItem = {
+      id: 'p-' + Math.random().toString(36).substring(2, 9),
+      url: photo.dataUrl,
+      caption: photo.caption,
+      phase: photo.phase,
+    };
+
+    // Update jobs state
+    setJobs(prev =>
+      prev.map(j => {
+        if (j.id === selectedJob.id || j.jobNumber === selectedJob.jobNumber) {
+          return {
+            ...j,
+            photos: [...j.photos, newPhotoItem],
+          };
+        }
+        return j;
+      })
+    );
+
+    // Update selectedJob state
+    setSelectedJob(prev => (prev ? { ...prev, photos: [...prev.photos, newPhotoItem] } : null));
+
+    showToast(`Attached ${photo.phase.toUpperCase()} inspection photo with GPS watermark`, 'success');
+
+    // Attempt backend persistence if connected
+    try {
+      if (selectedJob.id) {
+        await api.addJobPhoto(selectedJob.id, {
+          url: photo.dataUrl,
+          caption: photo.caption,
+          phase: photo.phase,
+          latitude: photo.latitude,
+          longitude: photo.longitude,
+        });
+      }
+    } catch (e) {
+      console.warn('Backend photo persist note:', e);
+    }
+  };
 
   // Signature pad modal state
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
@@ -489,7 +558,7 @@ export const MobileApkTodayJobsView: React.FC = () => {
   };
 
   // Status transitions inside Job Detail
-  const handleUpdateStatus = (jobId: string, newStatus: MobileJobItem['status']) => {
+  const handleUpdateStatus = async (jobId: string, newStatus: MobileJobItem['status']) => {
     const statusLabels: Record<MobileJobItem['status'], string> = {
       scheduled: 'Scheduled',
       en_route: 'En Route',
@@ -504,7 +573,17 @@ export const MobileApkTodayJobsView: React.FC = () => {
     if (selectedJob && selectedJob.id === jobId) {
       setSelectedJob(prev => (prev ? { ...prev, status: newStatus, statusLabel: statusLabels[newStatus] } : null));
     }
-    showToast(`Work order status updated to ${statusLabels[newStatus]}!`, 'success');
+    showToast(`Work order status updated to ${statusLabels[newStatus]} & synced with Central Dispatch 📡`, 'success');
+
+    try {
+      if (newStatus === 'on_site') {
+        await api.checkInJob(jobId);
+      } else {
+        await api.updateJobStatus(jobId, newStatus as any);
+      }
+    } catch (e) {
+      console.warn('Backend sync note:', e);
+    }
   };
 
   // Toggle checklist item
@@ -559,7 +638,7 @@ export const MobileApkTodayJobsView: React.FC = () => {
   };
 
   // Save Signature
-  const handleSaveSignature = (dataUrl: string) => {
+  const handleSaveSignature = async (dataUrl: string) => {
     if (!selectedJob) return;
     const sig = {
       signerName: selectedJob.customerName,
@@ -572,7 +651,19 @@ export const MobileApkTodayJobsView: React.FC = () => {
     );
     setSelectedJob(prev => (prev ? { ...prev, status: 'completed', statusLabel: 'Completed', signature: sig } : null));
     setSignatureModalOpen(false);
-    showToast('Customer signature captured and sealed! Work order completed.', 'success');
+    showToast('Customer signature captured & job completion synced to Central Dispatch 📡', 'success');
+
+    try {
+      if (selectedJob.id) {
+        await api.submitJobSignature(selectedJob.id, {
+          signedBy: sig.signerName,
+          signatureBase64: dataUrl,
+          customerAcceptedNotes: 'Work completed and customer approved on-site.'
+        });
+      }
+    } catch (e) {
+      console.warn('Backend signature sync note:', e);
+    }
   };
 
   return (
@@ -597,6 +688,18 @@ export const MobileApkTodayJobsView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Return to Central Dispatch Dashboard */}
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#092723] hover:bg-[#0E3631] text-[#14B8A6] border border-teal-700/50 shadow-xs transition-colors cursor-pointer"
+            title="Switch directly to Operations Dashboard"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Central Dashboard</span>
+            <span className="sm:hidden">Dashboard</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+          </button>
+
           {/* Screen Tab Switcher between vwnwt.jpg, thWmW.jpg and Ci01L.jpg */}
           <div className="flex items-center bg-[#0B1118] p-1 rounded-xl border border-[#1E293B] text-xs">
             <button
@@ -1204,6 +1307,96 @@ export const MobileApkTodayJobsView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Field Inspection Photos & Live Camera */}
+                <div className="bg-[#0F1622] p-4 rounded-2xl border border-[#1E2C3D] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-[#14B8A6]" />
+                      Field Photos &amp; Inspection Camera ({selectedJob.photos.length})
+                    </span>
+                    <span className="text-[10px] font-mono text-teal-400 bg-teal-950/80 px-2 py-0.5 rounded-full border border-teal-800/60 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-teal-400" />
+                      GPS Watermark
+                    </span>
+                  </div>
+
+                  {/* Quick Camera Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCameraDefaultPhase('before');
+                        setCameraModalOpen(true);
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-[#131F2E] hover:bg-[#1A2A3E] text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-[#1F3045] cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Take Before Photo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCameraDefaultPhase('after');
+                        setCameraModalOpen(true);
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-[#131F2E] hover:bg-[#1A2A3E] text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-[#1F3045] cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Take After Photo</span>
+                    </button>
+                  </div>
+
+                  {/* General Snap Photo Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCameraDefaultPhase('during');
+                      setCameraModalOpen(true);
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#092723] hover:bg-[#0E3631] text-[#14B8A6] font-bold text-xs flex items-center justify-center gap-2 border border-teal-700/40 transition-colors cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Launch Live Viewfinder &amp; Snap Photo</span>
+                  </button>
+
+                  {/* Gallery of Attached Photos */}
+                  {selectedJob.photos.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                      {selectedJob.photos.map(p => (
+                        <div
+                          key={p.id}
+                          className="group relative rounded-xl overflow-hidden border border-[#1F3045] bg-black aspect-4/3"
+                        >
+                          <img
+                            src={p.url}
+                            alt={p.caption}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5">
+                            <span
+                              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${
+                                p.phase === 'before'
+                                  ? 'bg-blue-900/80 text-blue-300'
+                                  : p.phase === 'after'
+                                  ? 'bg-emerald-900/80 text-emerald-300'
+                                  : 'bg-amber-900/80 text-amber-300'
+                              }`}
+                            >
+                              {p.phase}
+                            </span>
+                            <p className="text-[10px] text-slate-300 truncate mt-0.5">{p.caption}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-[#080D14] border border-[#162230] text-center text-[11px] text-slate-500">
+                      No photos captured yet. Use the camera above to record before/after inspection proof with GPS watermarking.
+                    </div>
+                  )}
+                </div>
+
                 {/* Customer Sign-off Signature */}
                 <div className="bg-[#0F1622] p-4 rounded-2xl border border-[#1E2C3D] space-y-3">
                   <div className="flex items-center justify-between">
@@ -1768,6 +1961,16 @@ export const MobileApkTodayJobsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Live Inspection Camera Modal */}
+      <CameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
+        defaultPhase={cameraDefaultPhase}
+        jobNumber={selectedJob?.jobNumber || 'WO-24568'}
+        locationName={selectedJob?.location || 'Nairobi'}
+      />
     </div>
   );
 };

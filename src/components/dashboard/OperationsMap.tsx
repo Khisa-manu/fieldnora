@@ -11,9 +11,11 @@ import {
   Radio,
   ExternalLink,
   X,
-  Navigation
+  Navigation,
+  Smartphone
 } from 'lucide-react';
 import { Technician } from '../../types';
+import { useApp } from '../../context/AppContext';
 
 interface OperationsMapProps {
   technicians?: Technician[];
@@ -29,6 +31,7 @@ export const OperationsMap: React.FC<OperationsMapProps> = ({
   className = '',
   focusedCoordinates = null,
 }) => {
+  const { openJobInMobile } = useApp();
   // Zoom & Pan state
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -527,6 +530,18 @@ export const OperationsMap: React.FC<OperationsMapProps> = ({
               <Phone className="w-3.5 h-3.5 text-[#14B8A6]" />
               <span>Direct Call</span>
             </a>
+            <button
+              type="button"
+              onClick={() => {
+                const match = selectedTech.currentJob.match(/WO-\d+|JOB-[\w-]+/);
+                openJobInMobile(match ? match[0] : selectedTech.currentJob);
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-[#092723] text-[#14B8A6] border border-teal-700/50 hover:bg-[#14B8A6] hover:text-[#091017] transition-colors flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+              title="Open work order in Mobile Technician App"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Mobile App</span>
+            </button>
             <button
               onClick={() => {
                 setPan({ x: 450 - selectedTech.x, y: 240 - selectedTech.y });

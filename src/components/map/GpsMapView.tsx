@@ -248,7 +248,7 @@ const initialTechniciansData: LiveTechnicianItem[] = [
 ];
 
 export const GpsMapView: React.FC = () => {
-  const { showToast } = useApp();
+  const { showToast, openJobInMobile } = useApp();
   const [technicians, setTechnicians] = useState<LiveTechnicianItem[]>(initialTechniciansData);
   const [selectedTechId, setSelectedTechId] = useState<string>('tech-brian');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1271,6 +1271,16 @@ export const GpsMapView: React.FC = () => {
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>In-Cab Nav (vwnwt.jpg)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openJobInMobile(selectedTech.workOrderCode)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#092723] hover:bg-[#0E3631] text-xs font-semibold text-[#14B8A6] border border-teal-700/50 transition-colors shadow-xs cursor-pointer"
+                title="Open this Work Order directly in Mobile Technician APK view"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Open in Mobile App</span>
               </button>
 
               <a

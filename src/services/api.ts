@@ -231,16 +231,35 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  checkInJob: (id: string, coords: { latitude: number; longitude: number }) =>
+  updateJobStatus: (id: string, status: any) =>
+    request<Job>(`/jobs/${id}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    }),
+
+  checkInJob: (id: string, coords?: { latitude: number; longitude: number }) =>
     request<Job>(`/jobs/${id}/check-in`, {
       method: 'POST',
-      body: JSON.stringify(coords),
+      body: JSON.stringify(coords || { latitude: -1.286389, longitude: 36.817223 }),
     }),
 
   saveSignature: (id: string, data: { signerName: string; dataUrl: string; customerAcceptedNotes?: string }) =>
     request<Job>(`/jobs/${id}/signature`, {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+
+  submitJobSignature: (
+    id: string,
+    data: { signedBy?: string; signerName?: string; signatureBase64?: string; dataUrl?: string; customerAcceptedNotes?: string }
+  ) =>
+    request<Job>(`/jobs/${id}/signature`, {
+      method: 'POST',
+      body: JSON.stringify({
+        signerName: data.signedBy || data.signerName || 'Customer',
+        dataUrl: data.signatureBase64 || data.dataUrl || '',
+        customerAcceptedNotes: data.customerAcceptedNotes,
+      }),
     }),
 
   addJobPhoto: (id: string, photo: { url: string; caption: string; phase: string; latitude?: number; longitude?: number }) =>

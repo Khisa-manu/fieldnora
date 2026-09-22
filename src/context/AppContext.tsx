@@ -46,6 +46,9 @@ interface AppContextType {
   userProfileModalOpen: boolean;
   selectedRegion: string;
   users: User[];
+  selectedMobileJobId: string | null;
+  setSelectedMobileJobId: (id: string | null) => void;
+  openJobInMobile: (jobIdOrNumber: string) => void;
   setActiveTab: (tab: ActiveTab) => void;
   setTechnicianViewMode: (mode: boolean) => void;
   setSearchModalOpen: (open: boolean) => void;
@@ -91,6 +94,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isOnline] = useState<boolean>(true);
   const [newJobModalOpen, setNewJobModalOpen] = useState<boolean>(false);
   const [selectedRegion, setSelectedRegion] = useState<string>('Nairobi Westlands');
+  const [selectedMobileJobId, setSelectedMobileJobId] = useState<string | null>(null);
+
+  const openJobInMobile = (jobIdOrNumber: string) => {
+    setSelectedMobileJobId(jobIdOrNumber);
+    setActiveTab('technician');
+    showToast(`Dispatch: Synchronized ${jobIdOrNumber} with Field Companion`, 'info');
+  };
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = Math.random().toString(36).slice(2, 9);
@@ -360,6 +370,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         userProfileModalOpen,
         selectedRegion,
         users,
+        selectedMobileJobId,
+        setSelectedMobileJobId,
+        openJobInMobile,
         setActiveTab,
         setTechnicianViewMode,
         setSearchModalOpen,
