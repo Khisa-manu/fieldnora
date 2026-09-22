@@ -61,10 +61,16 @@ export const NewWorkOrderModal: React.FC<NewWorkOrderModalProps> = ({ onJobCreat
       const todayStr = new Date().toISOString().split('T')[0];
       const randomJobNum = `WO-${Math.floor(24570 + Math.random() * 500)}`;
 
+      const matchedCust = customers.find(
+        c => c.name.toLowerCase() === customerName.trim().toLowerCase() ||
+             (c.companyName && c.companyName.toLowerCase() === customerName.trim().toLowerCase())
+      );
+
       await api.createJob({
         jobNumber: randomJobNum,
+        customerId: matchedCust?.id || customers[0]?.id || 'cust-01',
         title: title.trim(),
-        description: `${trade}: ${title.trim()}. Site: ${locationName}. Notes: ${notes || 'Standard callout'}`,
+        description: `${trade}: ${title.trim()}. Customer: ${customerName.trim()}. Site: ${locationName}. Notes: ${notes || 'Standard callout'}`,
         priority,
         status,
         assignedTechnicianIds: assignedTechId ? [assignedTechId] : [],
@@ -144,11 +150,28 @@ export const NewWorkOrderModal: React.FC<NewWorkOrderModalProps> = ({ onJobCreat
               <input
                 type="text"
                 required
+                list="client-facilities-list"
                 value={customerName}
-                onChange={e => setCustomerName(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setCustomerName(val);
+                  const found = customers.find(c => c.name === val || c.companyName === val);
+                  if (found) {
+                    if (found.address || found.area) {
+                      setLocationName(`${found.area || ''} ${found.address || ''}`.trim());
+                    }
+                  }
+                }}
                 placeholder="e.g. Britam Towers – Westlands"
                 className="w-full px-3 py-2 rounded-lg bg-[#0B1118] border border-[#1E293B] text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-[#14B8A6]"
               />
+              <datalist id="client-facilities-list">
+                {customers.map(c => (
+                  <option key={c.id} value={c.name}>
+                    {c.companyName ? `${c.companyName} • ${c.area || c.county}` : c.area || c.county}
+                  </option>
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-slate-300 font-medium mb-1">

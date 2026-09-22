@@ -142,8 +142,9 @@ apiRouter.post('/auth/forgot-password', (req: Request, res: Response) => {
 });
 
 apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
-  const { identifier, code, newPassword } = req.body;
-  if (!identifier || !code || !newPassword) {
+  const { identifier, email, code, newPassword } = req.body;
+  const targetId = identifier || email;
+  if (!targetId || !code || !newPassword) {
     return res.status(400).json({ error: 'Identifier, verification code, and new password are required.' });
   }
 
@@ -151,7 +152,7 @@ apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Password must be at least 4 characters.' });
   }
 
-  const cleanId = identifier.trim().toLowerCase();
+  const cleanId = targetId.trim().toLowerCase();
   const stored = passwordResetCodes.get(cleanId);
 
   // Accept generated code or fallback test code 123456
@@ -343,11 +344,6 @@ apiRouter.post('/auth/signup', async (req: Request, res: Response) => {
     user: adminUser,
     organization: newOrg,
   });
-});
-
-apiRouter.post('/auth/reset-password', (req: Request, res: Response) => {
-  const { email } = req.body;
-  res.json({ success: true, message: `Password reset instructions sent to ${email}` });
 });
 
 apiRouter.get('/organizations', async (req: Request, res: Response) => {
@@ -839,10 +835,47 @@ apiRouter.post('/jobs', async (req: Request, res: Response) => {
   const actorName = getActorName(req);
   const jobData = req.body;
 
+  let customerId = jobData.customerId;
+  if (!customerId) {
+    const custs = await db.getCustomers(orgId);
+    if (jobData.customerName) {
+      const match = custs.find(
+        c => c.name.toLowerCase() === jobData.customerName.toLowerCase() ||
+             (c.companyName && c.companyName.toLowerCase() === jobData.customerName.toLowerCase())
+      );
+      if (match) {
+        customerId = match.id;
+      } else {
+        const newCust = await db.createCustomer(
+          {
+            orgId,
+            type: 'company',
+            name: jobData.customerName,
+            companyName: jobData.customerName,
+            phone: jobData.customerPhone || '+254 700 000 000',
+            email: 'facilities@' + jobData.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.co.ke',
+            address: jobData.locationName || 'Nairobi',
+            county: 'Nairobi',
+            area: 'Central',
+            latitude: -1.286389,
+            longitude: 36.817223,
+            notes: 'Created via Work Order dispatch',
+            tags: ['Commercial', 'Dispatched'],
+            serviceLocations: [],
+          },
+          actorName
+        );
+        customerId = newCust.id;
+      }
+    } else {
+      customerId = custs[0]?.id || 'cust-01';
+    }
+  }
+
   const newJob = await db.createJob(
     {
       orgId,
-      customerId: jobData.customerId,
+      customerId,
       serviceLocationId: jobData.serviceLocationId,
       title: jobData.title,
       description: jobData.description || '',

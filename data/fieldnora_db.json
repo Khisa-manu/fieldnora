@@ -1,0 +1,1812 @@
+{
+  "organizations": [
+    {
+      "id": "org-nairobi-prime-01",
+      "name": "Nairobi Prime Technical Services Ltd",
+      "slug": "nairobi-prime",
+      "phone": "+254 712 345 678",
+      "email": "info@nairobitowerstech.co.ke",
+      "address": "Commercial Center, 4th Floor, Ring Road Kilimani",
+      "county": "Nairobi",
+      "country": "Kenya",
+      "currency": "KES",
+      "taxRate": 16,
+      "eTimsEnabled": true,
+      "mpesaPaybill": "522522",
+      "mpesaTill": "890123",
+      "createdAt": "2026-01-10T08:00:00.000Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr-admin-01",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Faith Wanjiku",
+      "email": "admin@fieldnora.co.ke",
+      "phone": "+254 722 100 200",
+      "role": "admin",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "createdAt": "2026-01-10T08:00:00.000Z"
+    },
+    {
+      "id": "usr-dispatch-01",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Kevin Omondi",
+      "email": "dispatch@fieldnora.co.ke",
+      "phone": "+254 733 210 320",
+      "role": "dispatcher",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "createdAt": "2026-01-12T09:00:00.000Z"
+    },
+    {
+      "id": "usr-tech-01",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Brian Kiprop",
+      "email": "brian@fieldnora.co.ke",
+      "phone": "+254 711 450 780",
+      "role": "technician",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "createdAt": "2026-01-15T08:30:00.000Z"
+    },
+    {
+      "id": "usr-tech-02",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Dennis Mutua",
+      "email": "dennis@fieldnora.co.ke",
+      "phone": "+254 724 670 890",
+      "role": "technician",
+      "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "createdAt": "2026-01-15T09:30:00.000Z"
+    },
+    {
+      "id": "usr-tech-03",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Samuel Chege",
+      "email": "samuel@fieldnora.co.ke",
+      "phone": "+254 735 889 123",
+      "role": "technician",
+      "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "createdAt": "2026-01-18T10:00:00.000Z"
+    },
+    {
+      "id": "usr-acct-01",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Mercy Achieng",
+      "email": "accounts@fieldnora.co.ke",
+      "phone": "+254 729 444 555",
+      "role": "accountant",
+      "status": "active",
+      "createdAt": "2026-01-20T11:00:00.000Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust-01",
+      "orgId": "org-nairobi-prime-01",
+      "type": "company",
+      "name": "Safaricom Plaza Facilities",
+      "companyName": "Safaricom Telecommunications PLC",
+      "phone": "+254 722 000 111",
+      "email": "facilities@safaricom.co.ke",
+      "address": "HQ 2, Waiyaki Way, Westlands",
+      "county": "Nairobi",
+      "area": "Westlands",
+      "latitude": -1.2642,
+      "longitude": 36.7925,
+      "notes": "Access requires prior gate clearance and security pass. Work between 7am and 6pm.",
+      "tags": [
+        "VIP",
+        "Commercial",
+        "Service Contract"
+      ],
+      "serviceLocations": [
+        {
+          "id": "loc-01-a",
+          "name": "Server Room Alpha (3rd Floor)",
+          "address": "HQ 2, Waiyaki Way, Westlands",
+          "county": "Nairobi",
+          "area": "Westlands",
+          "latitude": -1.2642,
+          "longitude": 36.7925,
+          "contactPerson": "Martin Mwangi (IT Ops)",
+          "contactPhone": "+254 722 888 999"
+        },
+        {
+          "id": "loc-01-b",
+          "name": "Executive Suites Wing B",
+          "address": "HQ 1, Waiyaki Way, Westlands",
+          "county": "Nairobi",
+          "area": "Westlands",
+          "latitude": -1.2645,
+          "longitude": 36.793,
+          "contactPerson": "Cynthia Ndwiga",
+          "contactPhone": "+254 722 777 666"
+        }
+      ],
+      "createdAt": "2026-01-15T09:00:00.000Z",
+      "updatedAt": "2026-02-01T10:00:00.000Z"
+    },
+    {
+      "id": "cust-02",
+      "orgId": "org-nairobi-prime-01",
+      "type": "company",
+      "name": "Kilimani Crest Apartments Body Corporate",
+      "companyName": "Kilimani Crest Residences",
+      "phone": "+254 733 999 444",
+      "email": "manager@kilimanicrest.co.ke",
+      "address": "Dennis Pritt Road, Kilimani",
+      "county": "Nairobi",
+      "area": "Kilimani",
+      "latitude": -1.2915,
+      "longitude": 36.7892,
+      "notes": "Borehole pump system and solar water heating for 48 residential units.",
+      "tags": [
+        "Residential Estate",
+        "Pumps",
+        "Plumbing"
+      ],
+      "serviceLocations": [
+        {
+          "id": "loc-02-a",
+          "name": "Borehole Plant & Rooftop Solar Panels",
+          "address": "Dennis Pritt Road, Kilimani",
+          "county": "Nairobi",
+          "area": "Kilimani",
+          "latitude": -1.2915,
+          "longitude": 36.7892,
+          "contactPerson": "Estate Caretaker Peter",
+          "contactPhone": "+254 710 445 566"
+        }
+      ],
+      "createdAt": "2026-01-20T11:00:00.000Z",
+      "updatedAt": "2026-02-10T14:00:00.000Z"
+    },
+    {
+      "id": "cust-03",
+      "orgId": "org-nairobi-prime-01",
+      "type": "individual",
+      "name": "Dr. Evans Kipchumba",
+      "phone": "+254 720 555 333",
+      "email": "evans.kipchumba@gmail.com",
+      "address": "Miotoni Road, House 14B, Karen",
+      "county": "Nairobi",
+      "area": "Karen",
+      "latitude": -1.321,
+      "longitude": 36.7115,
+      "notes": "Main luxury residence backup generator and main distribution board upgrades.",
+      "tags": [
+        "Individual",
+        "Electrical",
+        "Prompt Payer"
+      ],
+      "serviceLocations": [
+        {
+          "id": "loc-03-a",
+          "name": "Main Villa & Guest House",
+          "address": "Miotoni Road, House 14B, Karen",
+          "county": "Nairobi",
+          "area": "Karen",
+          "latitude": -1.321,
+          "longitude": 36.7115,
+          "contactPerson": "Dr. Evans",
+          "contactPhone": "+254 720 555 333"
+        }
+      ],
+      "createdAt": "2026-02-05T08:30:00.000Z",
+      "updatedAt": "2026-02-18T16:00:00.000Z"
+    },
+    {
+      "id": "cust-04",
+      "orgId": "org-nairobi-prime-01",
+      "type": "company",
+      "name": "Java House Upper Hill Branch",
+      "companyName": "Nairobi Java Coffee House Ltd",
+      "phone": "+254 711 020 304",
+      "email": "upperhill@javahouse.com",
+      "address": "Britam Tower Ground Floor, Upper Hill",
+      "county": "Nairobi",
+      "area": "Upper Hill",
+      "latitude": -1.2974,
+      "longitude": 36.818,
+      "notes": "Kitchen grease trap, espresso machine water filtration, kitchen exhaust hoods.",
+      "tags": [
+        "Hospitality",
+        "Urgent Maintenance",
+        "Commercial"
+      ],
+      "serviceLocations": [
+        {
+          "id": "loc-04-a",
+          "name": "Kitchen & Service Bar",
+          "address": "Britam Tower, Hospital Road, Upper Hill",
+          "county": "Nairobi",
+          "area": "Upper Hill",
+          "latitude": -1.2974,
+          "longitude": 36.818,
+          "contactPerson": "Branch Manager Brenda",
+          "contactPhone": "+254 711 020 304"
+        }
+      ],
+      "createdAt": "2026-02-14T10:15:00.000Z",
+      "updatedAt": "2026-02-28T12:00:00.000Z"
+    },
+    {
+      "id": "cust-05",
+      "orgId": "org-nairobi-prime-01",
+      "type": "individual",
+      "name": "Gladys Mutiso",
+      "phone": "+254 722 334 455",
+      "email": "gladys.mutiso@yahoo.com",
+      "address": "Muthaiga North Court 7, House 22",
+      "county": "Nairobi",
+      "area": "Muthaiga North",
+      "latitude": -1.2389,
+      "longitude": 36.852,
+      "notes": "Solar borehole water heater tripping breakers during heavy rains.",
+      "tags": [
+        "Individual",
+        "Solar",
+        "Plumbing"
+      ],
+      "serviceLocations": [
+        {
+          "id": "loc-05-a",
+          "name": "Residential Compound",
+          "address": "Muthaiga North Court 7, House 22",
+          "county": "Nairobi",
+          "area": "Muthaiga North",
+          "latitude": -1.2389,
+          "longitude": 36.852
+        }
+      ],
+      "createdAt": "2026-03-01T07:45:00.000Z",
+      "updatedAt": "2026-03-01T07:45:00.000Z"
+    }
+  ],
+  "technicians": [
+    {
+      "id": "tech-07",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-07",
+      "name": "John Mwangi",
+      "phone": "+254 722 456 789",
+      "email": "john.mwangi@fieldnora.co.ke",
+      "specialization": "Commercial HVAC & Refrigeration",
+      "vehicleReg": "KDL 452X",
+      "activeStatus": "on_job",
+      "currentLat": -1.265,
+      "currentLng": 36.805,
+      "lastLocationUpdate": "2026-09-21T15:38:00.000Z",
+      "rating": 4.9,
+      "skills": [
+        "AC Diagnostic",
+        "Refrigerant R410A",
+        "Compressor Overhaul",
+        "Chiller Maintenance"
+      ]
+    },
+    {
+      "id": "tech-03",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-03",
+      "name": "David Kiprotich",
+      "phone": "+254 711 345 678",
+      "email": "david.kiprotich@fieldnora.co.ke",
+      "specialization": "Generator Systems & Power Distribution",
+      "vehicleReg": "KDG 112P",
+      "activeStatus": "on_job",
+      "currentLat": -1.312,
+      "currentLng": 36.82,
+      "lastLocationUpdate": "2026-09-21T15:21:00.000Z",
+      "rating": 4.9,
+      "skills": [
+        "Diesel Generators",
+        "ATS Panels",
+        "Alternator Overhaul",
+        "Switchgear"
+      ]
+    },
+    {
+      "id": "tech-11",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-11",
+      "name": "Esther Wanjiku",
+      "phone": "+254 733 987 654",
+      "email": "esther.wanjiku@fieldnora.co.ke",
+      "specialization": "Master Electrician & 3-Phase Systems",
+      "vehicleReg": "KDA 789M",
+      "activeStatus": "en_route",
+      "currentLat": -1.225,
+      "currentLng": 36.885,
+      "lastLocationUpdate": "2026-09-21T14:57:00.000Z",
+      "rating": 4.8,
+      "skills": [
+        "Circuit Troubleshooting",
+        "3-Phase Boards",
+        "Transformer Servicing",
+        "Power Quality"
+      ]
+    },
+    {
+      "id": "tech-02",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-02",
+      "name": "Michael Otieno",
+      "phone": "+254 724 670 890",
+      "email": "michael.otieno@fieldnora.co.ke",
+      "specialization": "Industrial Plumbing & Piping",
+      "vehicleReg": "KCB 901W",
+      "activeStatus": "en_route",
+      "currentLat": -1.264,
+      "currentLng": 36.801,
+      "lastLocationUpdate": "2026-09-21T14:32:00.000Z",
+      "rating": 4.8,
+      "skills": [
+        "Pressure Testing",
+        "Leak Detection",
+        "PPR Fusion",
+        "Booster Pumps"
+      ]
+    },
+    {
+      "id": "tech-08",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-08",
+      "name": "Peter Ndung'u",
+      "phone": "+254 720 112 334",
+      "email": "peter.ndungu@fieldnora.co.ke",
+      "specialization": "Solar Thermal & Water Heaters",
+      "vehicleReg": "KCT 342L",
+      "activeStatus": "on_job",
+      "currentLat": -1.24,
+      "currentLng": 36.765,
+      "lastLocationUpdate": "2026-09-21T14:10:00.000Z",
+      "rating": 4.9,
+      "skills": [
+        "Solar Geysers",
+        "Heating Elements",
+        "Thermostat Calibration",
+        "Storage Tanks"
+      ]
+    },
+    {
+      "id": "tech-05",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-05",
+      "name": "Alex Kamau",
+      "phone": "+254 712 990 011",
+      "email": "alex.kamau@fieldnora.co.ke",
+      "specialization": "Fire Alarms & Life Safety Systems",
+      "vehicleReg": "KDD 654R",
+      "activeStatus": "en_route",
+      "currentLat": -1.262,
+      "currentLng": 36.802,
+      "lastLocationUpdate": "2026-09-21T13:45:00.000Z",
+      "rating": 4.7,
+      "skills": [
+        "Smoke Detectors",
+        "Fire Panels",
+        "Suppression Systems",
+        "Emergency Sounders"
+      ]
+    },
+    {
+      "id": "tech-01",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-01",
+      "name": "Brian Kiprop",
+      "phone": "+254 711 450 780",
+      "email": "brian@fieldnora.co.ke",
+      "specialization": "HVAC & Commercial Air Conditioning",
+      "vehicleReg": "KDG 441X",
+      "activeStatus": "on_job",
+      "currentLat": -1.215,
+      "currentLng": 36.802,
+      "lastLocationUpdate": "2026-09-21T13:15:00.000Z",
+      "rating": 4.9,
+      "skills": [
+        "Split AC servicing",
+        "Chiller overhaul",
+        "Gas refill R410A",
+        "Ductwork"
+      ]
+    },
+    {
+      "id": "tech-04",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-04",
+      "name": "Samuel Chege",
+      "phone": "+254 735 889 123",
+      "email": "samuel@fieldnora.co.ke",
+      "specialization": "Senior Plumbing & Drainage Engineer",
+      "vehicleReg": "KCX 230P",
+      "activeStatus": "on_job",
+      "currentLat": -1.2915,
+      "currentLng": 36.7892,
+      "lastLocationUpdate": "2026-09-21T12:40:00.000Z",
+      "rating": 5,
+      "skills": [
+        "High Pressure Jetting",
+        "Water Booster Pumps",
+        "PPR Pipe Fusion",
+        "Leak Detection"
+      ]
+    },
+    {
+      "id": "tech-06",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-06",
+      "name": "Dennis Mutua",
+      "phone": "+254 722 778 899",
+      "email": "dennis.mutua@fieldnora.co.ke",
+      "specialization": "Commercial Kitchen Ventilation",
+      "vehicleReg": "KDM 882S",
+      "activeStatus": "en_route",
+      "currentLat": -1.295,
+      "currentLng": 36.815,
+      "lastLocationUpdate": "2026-09-21T12:10:00.000Z",
+      "rating": 4.8,
+      "skills": [
+        "Extraction Hoods",
+        "Blower Fans",
+        "Grease Ducting",
+        "VFD Inverters"
+      ]
+    },
+    {
+      "id": "tech-09",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-09",
+      "name": "Faith Ndwiga",
+      "phone": "+254 725 334 455",
+      "email": "faith.ndwiga@fieldnora.co.ke",
+      "specialization": "Cold Storage & Refrigeration",
+      "vehicleReg": "KDH 109Q",
+      "activeStatus": "available",
+      "currentLat": -1.228,
+      "currentLng": 36.805,
+      "lastLocationUpdate": "2026-09-21T11:30:00.000Z",
+      "rating": 4.9,
+      "skills": [
+        "Cold Room Freezers",
+        "Expansion Valves",
+        "Insulation Panels",
+        "Defrost Timers"
+      ]
+    },
+    {
+      "id": "tech-10",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-10",
+      "name": "Kevin Ochieng",
+      "phone": "+254 719 556 677",
+      "email": "kevin.ochieng@fieldnora.co.ke",
+      "specialization": "Thermal Imaging & Switchgear",
+      "vehicleReg": "KDJ 771Z",
+      "activeStatus": "offline",
+      "currentLat": -1.292,
+      "currentLng": 36.788,
+      "lastLocationUpdate": "2026-09-21T11:00:00.000Z",
+      "rating": 4.7,
+      "skills": [
+        "FLIR Thermal Scans",
+        "Busbar Torquing",
+        "MCCB Testing",
+        "Power Factor"
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "orgId": "org-nairobi-prime-01",
+      "title": "Emergency HVAC Pump Check",
+      "description": "",
+      "priority": "urgent",
+      "status": "en_route",
+      "assignedTechnicianIds": [],
+      "scheduledDate": "2026-09-22",
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "estimatedDurationMin": 180,
+      "labour": [],
+      "materials": [],
+      "expenses": [],
+      "internalNotes": "",
+      "customerNotes": "",
+      "photos": [],
+      "documents": [],
+      "checklist": [
+        {
+          "id": "c-1",
+          "label": "Safety check and tools inspection",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "c-2",
+          "label": "Work execution per engineering standards",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "c-3",
+          "label": "Client verification & site clean-up",
+          "checked": false,
+          "required": true
+        }
+      ],
+      "id": "job-2689fdb9",
+      "jobNumber": "JOB-2026-0012",
+      "createdAt": "2026-09-22T09:26:43.632Z",
+      "updatedAt": "2026-09-22T09:26:43.632Z"
+    },
+    {
+      "id": "job-wo-24568",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24568",
+      "customerId": "cust-01",
+      "title": "Office AC Repair",
+      "description": "Britam Towers – Westlands Office AC Repair. Diagnostic and cooling coil inspection.",
+      "priority": "medium",
+      "status": "en_route",
+      "assignedTechnicianIds": [
+        "tech-07"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "15:38",
+      "endTime": "17:30",
+      "estimatedDurationMin": 120,
+      "labour": [
+        {
+          "id": "l-07",
+          "description": "HVAC Diagnosis & Gas Check",
+          "technicianId": "tech-07",
+          "technicianName": "John Mwangi",
+          "hours": 2,
+          "hourlyRate": 3000,
+          "total": 6000
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T15:00:00.000Z",
+      "updatedAt": "2026-09-21T15:38:00.000Z"
+    },
+    {
+      "id": "job-wo-24567",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24567",
+      "customerId": "cust-01",
+      "title": "Generator Inspection",
+      "description": "Safaricom Care Centre Generator Inspection and ATS panel routine test.",
+      "priority": "high",
+      "status": "on_site",
+      "assignedTechnicianIds": [
+        "tech-03"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "14:32",
+      "endTime": "16:30",
+      "estimatedDurationMin": 120,
+      "labour": [
+        {
+          "id": "l-03",
+          "description": "Generator Diagnostics",
+          "technicianId": "tech-03",
+          "technicianName": "David Kiprotich",
+          "hours": 2,
+          "hourlyRate": 3500,
+          "total": 7000
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T14:00:00.000Z",
+      "updatedAt": "2026-09-21T15:21:00.000Z"
+    },
+    {
+      "id": "job-wo-24566",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24566",
+      "customerId": "cust-02",
+      "title": "Electrical Fault",
+      "description": "Garden City Mall 3-Phase Electrical Fault & Breaker Tripping.",
+      "priority": "medium",
+      "status": "in_progress",
+      "assignedTechnicianIds": [
+        "tech-11"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "14:57",
+      "endTime": "17:00",
+      "estimatedDurationMin": 120,
+      "labour": [
+        {
+          "id": "l-11",
+          "description": "Master Electrician Fault Analysis",
+          "technicianId": "tech-11",
+          "technicianName": "Esther Wanjiku",
+          "hours": 2.5,
+          "hourlyRate": 3000,
+          "total": 7500
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T14:30:00.000Z",
+      "updatedAt": "2026-09-21T14:57:00.000Z"
+    },
+    {
+      "id": "job-wo-24565",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24565",
+      "customerId": "cust-01",
+      "title": "Plumbing Leak",
+      "description": "Delta Towers – Westlands Plumbing Leak in 4th floor riser valve.",
+      "priority": "low",
+      "status": "en_route",
+      "assignedTechnicianIds": [
+        "tech-02"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "14:32",
+      "endTime": "16:00",
+      "estimatedDurationMin": 90,
+      "labour": [
+        {
+          "id": "l-02",
+          "description": "Pipe Isolation & Seal Repair",
+          "technicianId": "tech-02",
+          "technicianName": "Michael Otieno",
+          "hours": 1.5,
+          "hourlyRate": 2500,
+          "total": 3750
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T14:00:00.000Z",
+      "updatedAt": "2026-09-21T14:32:00.000Z"
+    },
+    {
+      "id": "job-wo-24564",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24564",
+      "customerId": "cust-03",
+      "title": "Water Heater Repair",
+      "description": "Kitisuru Neighbourhood Solar Water Heater thermostat replacement.",
+      "priority": "high",
+      "status": "in_progress",
+      "assignedTechnicianIds": [
+        "tech-08"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "14:30",
+      "endTime": "16:30",
+      "estimatedDurationMin": 120,
+      "labour": [
+        {
+          "id": "l-08",
+          "description": "Solar Thermal Diagnostics",
+          "technicianId": "tech-08",
+          "technicianName": "Peter Ndung'u",
+          "hours": 2,
+          "hourlyRate": 2800,
+          "total": 5600
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T13:30:00.000Z",
+      "updatedAt": "2026-09-21T14:10:00.000Z"
+    },
+    {
+      "id": "job-wo-24563",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "WO-24563",
+      "customerId": "cust-01",
+      "title": "Fire Alarm Check",
+      "description": "Westgate Shopping Centre Fire Alarm Check & sounder test.",
+      "priority": "low",
+      "status": "en_route",
+      "assignedTechnicianIds": [
+        "tech-05"
+      ],
+      "scheduledDate": "2026-09-22",
+      "startTime": "14:35",
+      "endTime": "16:00",
+      "estimatedDurationMin": 90,
+      "labour": [
+        {
+          "id": "l-05",
+          "description": "Alarm Panel Signal Test",
+          "technicianId": "tech-05",
+          "technicianName": "Alex Kamau",
+          "hours": 1.5,
+          "hourlyRate": 2500,
+          "total": 3750
+        }
+      ],
+      "materials": [],
+      "expenses": [],
+      "photos": [],
+      "documents": [],
+      "checklist": [],
+      "createdAt": "2026-09-21T13:00:00.000Z",
+      "updatedAt": "2026-09-21T13:45:00.000Z"
+    },
+    {
+      "id": "job-01",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "JOB-2026-0101",
+      "customerId": "cust-01",
+      "serviceLocationId": "loc-01-a",
+      "title": "Server Room Precision AC Maintenance & Gas Pressure Check",
+      "description": "Quarterly preventative service for redundant Daikin 24,000 BTU precision cooling units. Inspect condenser coils, filters and gas pressure.",
+      "priority": "urgent",
+      "status": "in_progress",
+      "assignedTechnicianIds": [
+        "tech-01"
+      ],
+      "scheduledDate": "2026-09-19",
+      "startTime": "08:30",
+      "endTime": "12:30",
+      "estimatedDurationMin": 240,
+      "actualDurationMin": 155,
+      "labour": [
+        {
+          "id": "lab-01",
+          "description": "HVAC Specialist Diagnostics & Coil Cleansing",
+          "technicianId": "tech-01",
+          "technicianName": "Brian Kiprop",
+          "hours": 4,
+          "hourlyRate": 3000,
+          "total": 12000
+        }
+      ],
+      "materials": [
+        {
+          "id": "mat-01",
+          "productId": "prod-01",
+          "name": "R410A Refrigerant Gas (Top-up 2.5kg)",
+          "sku": "HVAC-REF-410A",
+          "quantity": 1,
+          "unitCost": 8500,
+          "unitPrice": 14500,
+          "total": 14500
+        }
+      ],
+      "expenses": [
+        {
+          "id": "exp-01",
+          "description": "Westlands Parking fee & gate clearance token",
+          "category": "travel",
+          "amount": 500
+        }
+      ],
+      "internalNotes": "Contact IT Manager Martin upon arrival. High security zone, static wristbands required.",
+      "customerNotes": "All work executed with zero system downtime. Server room temperature sustained at 19.5°C.",
+      "photos": [
+        {
+          "id": "p-01",
+          "url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80",
+          "caption": "Condenser unit prior to coil cleaning",
+          "phase": "before",
+          "timestamp": "2026-09-19T08:45:00.000Z",
+          "latitude": -1.2642,
+          "longitude": 36.7925
+        },
+        {
+          "id": "p-02",
+          "url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+          "caption": "Pressure gauges showing 120 PSI post gas refill",
+          "phase": "during",
+          "timestamp": "2026-09-19T10:15:00.000Z",
+          "latitude": -1.2642,
+          "longitude": 36.7925
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-01",
+          "name": "Daikin_Precision_Specs_2026.pdf",
+          "url": "#",
+          "size": "1.4 MB",
+          "uploadedAt": "2026-09-18T14:00:00.000Z"
+        }
+      ],
+      "checklist": [
+        {
+          "id": "chk-1",
+          "label": "Verify lock-out tag-out protocols",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-2",
+          "label": "Inspect suction and discharge line pressure",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-3",
+          "label": "Clean condenser fins with foaming chemical wash",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-4",
+          "label": "Test thermostat and BMS sensor calibration",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-5",
+          "label": "Obtain client supervisor counter-signature",
+          "checked": false,
+          "required": true
+        }
+      ],
+      "travelStartTime": "2026-09-19T08:00:00.000Z",
+      "checkInTime": "2026-09-19T08:25:00.000Z",
+      "checkInLat": -1.2642,
+      "checkInLng": 36.7925,
+      "createdAt": "2026-09-18T10:00:00.000Z",
+      "updatedAt": "2026-09-19T10:15:00.000Z"
+    },
+    {
+      "id": "job-02",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "JOB-2026-0102",
+      "customerId": "cust-03",
+      "serviceLocationId": "loc-03-a",
+      "title": "Solar Inverter Backup Integration & Phase Balancing",
+      "description": "Connect Victron 5kVA inverter to main distribution board, install automatic changeover switch, balance load across 3 residential phases.",
+      "priority": "high",
+      "status": "en_route",
+      "assignedTechnicianIds": [
+        "tech-02"
+      ],
+      "scheduledDate": "2026-09-19",
+      "startTime": "10:00",
+      "endTime": "15:00",
+      "estimatedDurationMin": 300,
+      "labour": [
+        {
+          "id": "lab-02",
+          "description": "Master Electrician Inverter & DB Termination",
+          "technicianId": "tech-02",
+          "technicianName": "Dennis Mutua",
+          "hours": 5,
+          "hourlyRate": 2500,
+          "total": 12500
+        }
+      ],
+      "materials": [
+        {
+          "id": "mat-02",
+          "productId": "prod-02",
+          "name": "Schneider 63A 3-Phase MCB",
+          "sku": "ELEC-MCB-63A-3P",
+          "quantity": 2,
+          "unitCost": 4200,
+          "unitPrice": 6800,
+          "total": 13600
+        }
+      ],
+      "expenses": [],
+      "internalNotes": "Customer requested neat cable trunking in the battery bank garage.",
+      "customerNotes": "System tested on full simulated Kenya Power blackout.",
+      "photos": [],
+      "documents": [],
+      "checklist": [
+        {
+          "id": "chk-201",
+          "label": "Test earth loop impedance and neutral bonding",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-202",
+          "label": "Configure inverter battery charge parameters",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-203",
+          "label": "Label all circuits clearly inside DB panel",
+          "checked": false,
+          "required": true
+        }
+      ],
+      "travelStartTime": "2026-09-19T09:15:00.000Z",
+      "createdAt": "2026-09-18T14:30:00.000Z",
+      "updatedAt": "2026-09-19T09:15:00.000Z"
+    },
+    {
+      "id": "job-03",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "JOB-2026-0103",
+      "customerId": "cust-02",
+      "serviceLocationId": "loc-02-a",
+      "title": "Borehole Submersible Booster Pump Overhaul",
+      "description": "Replace burned run capacitor, rebuild check valves, test digital pressure switch for 48 units.",
+      "priority": "high",
+      "status": "completed",
+      "assignedTechnicianIds": [
+        "tech-03"
+      ],
+      "scheduledDate": "2026-09-18",
+      "startTime": "09:00",
+      "endTime": "13:00",
+      "estimatedDurationMin": 240,
+      "actualDurationMin": 210,
+      "labour": [
+        {
+          "id": "lab-03",
+          "description": "Senior Pump Engineer Onsite Diagnostic & Repair",
+          "technicianId": "tech-03",
+          "technicianName": "Samuel Chege",
+          "hours": 4,
+          "hourlyRate": 3500,
+          "total": 14000
+        }
+      ],
+      "materials": [
+        {
+          "id": "mat-03",
+          "productId": "prod-03",
+          "name": "Pedrollo 1.0HP Booster Pump",
+          "sku": "PLUMB-PUMP-BOOST-1HP",
+          "quantity": 1,
+          "unitCost": 28000,
+          "unitPrice": 38500,
+          "total": 38500
+        },
+        {
+          "id": "mat-04",
+          "productId": "prod-04",
+          "name": "PPR High-Pressure Pipe 32mm",
+          "sku": "PLUMB-PPR-32MM",
+          "quantity": 4,
+          "unitCost": 950,
+          "unitPrice": 1650,
+          "total": 6600
+        }
+      ],
+      "expenses": [
+        {
+          "id": "exp-03",
+          "description": "Transport & crane hoist rental for pump well",
+          "category": "tools",
+          "amount": 3500
+        }
+      ],
+      "internalNotes": "Old pump had silt buildup. Advised committee to clean reservoir sediment every 6 months.",
+      "customerNotes": "Water pressure restored to 3.8 Bar across all floors.",
+      "photos": [
+        {
+          "id": "p-03",
+          "url": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
+          "caption": "New Pedrollo booster pump installed with vibration dampers",
+          "phase": "after",
+          "timestamp": "2026-09-18T12:40:00.000Z"
+        }
+      ],
+      "documents": [],
+      "customerSignature": {
+        "signerName": "Peter Kamau (Estate Caretaker)",
+        "signedAt": "2026-09-18T12:50:00.000Z",
+        "dataUrl": "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"60\"><path d=\"M 10 40 Q 50 10 90 35 T 180 20\" stroke=\"%230F172A\" stroke-width=\"2\" fill=\"none\"/></svg>",
+        "customerAcceptedNotes": "Water supply thoroughly tested. Satisfied with repair."
+      },
+      "checklist": [
+        {
+          "id": "chk-301",
+          "label": "Isolate main electrical supply to control panel",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-302",
+          "label": "Prime centrifugal pump and bleed air locks",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-303",
+          "label": "Check pressure tank pre-charge bladder",
+          "checked": true,
+          "required": true
+        },
+        {
+          "id": "chk-304",
+          "label": "Obtain caretaker sign-off",
+          "checked": true,
+          "required": true
+        }
+      ],
+      "completionNotes": "All pressure switches calibrated. Zero pipe leaks detected under 4.0 Bar hydraulic load.",
+      "travelStartTime": "2026-09-18T08:30:00.000Z",
+      "checkInTime": "2026-09-18T08:58:00.000Z",
+      "checkOutTime": "2026-09-18T12:55:00.000Z",
+      "checkInLat": -1.2915,
+      "checkInLng": 36.7892,
+      "invoiceId": "inv-01",
+      "createdAt": "2026-09-17T11:00:00.000Z",
+      "updatedAt": "2026-09-18T13:00:00.000Z"
+    },
+    {
+      "id": "job-04",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "JOB-2026-0104",
+      "customerId": "cust-04",
+      "serviceLocationId": "loc-04-a",
+      "title": "Restaurant Kitchen Commercial Grease Trap De-sludging & Plumbing",
+      "description": "Clear clogged kitchen grease traps and high pressure jet primary discharge pipe before morning lunch rush.",
+      "priority": "urgent",
+      "status": "scheduled",
+      "assignedTechnicianIds": [
+        "tech-03"
+      ],
+      "scheduledDate": "2026-09-19",
+      "startTime": "15:30",
+      "endTime": "18:00",
+      "estimatedDurationMin": 150,
+      "labour": [],
+      "materials": [],
+      "expenses": [],
+      "internalNotes": "Wear heavy duty rubber PPE and odor mitigation gear.",
+      "customerNotes": "",
+      "photos": [],
+      "documents": [],
+      "checklist": [
+        {
+          "id": "chk-401",
+          "label": "Inspect grease interceptor inlet and outlet baffles",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-402",
+          "label": "Jet line with enzymatic degreaser solution",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-403",
+          "label": "Verify fast drainage with hot water flush",
+          "checked": false,
+          "required": true
+        }
+      ],
+      "createdAt": "2026-09-18T16:00:00.000Z",
+      "updatedAt": "2026-09-18T16:00:00.000Z"
+    },
+    {
+      "id": "job-05",
+      "orgId": "org-nairobi-prime-01",
+      "jobNumber": "JOB-2026-0105",
+      "customerId": "cust-05",
+      "serviceLocationId": "loc-05-a",
+      "title": "Solar Water Heater Heating Element Replacement",
+      "description": "Diagnose tripped earth leakage breaker; replace calcified 3kW immersion heating element and thermostat in 300L solar tank.",
+      "priority": "medium",
+      "status": "new",
+      "assignedTechnicianIds": [],
+      "scheduledDate": "2026-09-20",
+      "startTime": "11:00",
+      "endTime": "13:30",
+      "estimatedDurationMin": 150,
+      "labour": [],
+      "materials": [],
+      "expenses": [],
+      "internalNotes": "Client works from home; confirm arrival 30 minutes in advance via WhatsApp.",
+      "customerNotes": "",
+      "photos": [],
+      "documents": [],
+      "checklist": [
+        {
+          "id": "chk-501",
+          "label": "Roof ladder safety harness inspection",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-502",
+          "label": "Drain storage tank safe water discharge",
+          "checked": false,
+          "required": true
+        },
+        {
+          "id": "chk-503",
+          "label": "Megger test element resistance and earth insulation",
+          "checked": false,
+          "required": true
+        }
+      ],
+      "createdAt": "2026-09-19T07:30:00.000Z",
+      "updatedAt": "2026-09-19T07:30:00.000Z"
+    }
+  ],
+  "estimates": [
+    {
+      "id": "est-01",
+      "orgId": "org-nairobi-prime-01",
+      "estimateNumber": "EST-2026-0042",
+      "customerId": "cust-01",
+      "title": "Annual HVAC & Chiller Maintenance Contract (4 Quarters)",
+      "status": "approved",
+      "date": "2026-09-10",
+      "expiryDate": "2026-10-10",
+      "items": [
+        {
+          "id": "ei-1",
+          "type": "service",
+          "description": "Quarterly Precision Server Room AC Overhaul (4 Visits/Year)",
+          "quantity": 4,
+          "unitPrice": 35000,
+          "discount": 10000,
+          "total": 130000
+        },
+        {
+          "id": "ei-2",
+          "type": "product",
+          "description": "Pre-allocated R410A Clean Refrigerant reserve cylinders",
+          "quantity": 2,
+          "unitPrice": 14500,
+          "discount": 0,
+          "total": 29000
+        },
+        {
+          "id": "ei-3",
+          "type": "service",
+          "description": "24/7 On-Call Emergency Breakdown Response SLA",
+          "quantity": 1,
+          "unitPrice": 45000,
+          "discount": 5000,
+          "total": 40000
+        }
+      ],
+      "subtotal": 199000,
+      "discountTotal": 15000,
+      "taxRate": 16,
+      "taxAmount": 31840,
+      "totalAmount": 230840,
+      "notes": "SLA guarantees 2-hour technician arrival in Westlands during business hours.",
+      "terms": "Payment terms: 50% deposit upon acceptance, balance quarterly. Valid for 30 days.",
+      "approvedAt": "2026-09-15T11:20:00.000Z",
+      "convertedJobId": "job-01",
+      "createdAt": "2026-09-10T09:00:00.000Z"
+    },
+    {
+      "id": "est-02",
+      "orgId": "org-nairobi-prime-01",
+      "estimateNumber": "EST-2026-0043",
+      "customerId": "cust-03",
+      "title": "Turnkey 10kW Hybrid Solar & Lithium Storage Installation",
+      "status": "sent",
+      "date": "2026-09-14",
+      "expiryDate": "2026-10-14",
+      "items": [
+        {
+          "id": "ei-4",
+          "type": "product",
+          "description": "Victron MultiPlus-II 48/5000 Inverter Charger (Dual Parallel)",
+          "quantity": 2,
+          "unitPrice": 245000,
+          "discount": 20000,
+          "total": 470000
+        },
+        {
+          "id": "ei-5",
+          "type": "product",
+          "description": "Pylontech US3000C 3.5kWh Lithium LiFePO4 Battery Modules",
+          "quantity": 4,
+          "unitPrice": 185000,
+          "discount": 0,
+          "total": 740000
+        },
+        {
+          "id": "ei-6",
+          "type": "service",
+          "description": "Turnkey Solar Installation, AC/DC DB, Surge Arrestors & Commissioning",
+          "quantity": 1,
+          "unitPrice": 75000,
+          "discount": 0,
+          "total": 75000
+        }
+      ],
+      "subtotal": 1285000,
+      "discountTotal": 20000,
+      "taxRate": 16,
+      "taxAmount": 205600,
+      "totalAmount": 1490600,
+      "notes": "System is capable of running all borehole pumps, lighting, refrigeration and security lights.",
+      "terms": "70% mobilization deposit required before component dispatch. Balance on commissioning.",
+      "createdAt": "2026-09-14T10:00:00.000Z"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-01",
+      "orgId": "org-nairobi-prime-01",
+      "invoiceNumber": "INV-2026-0089",
+      "customerId": "cust-02",
+      "jobId": "job-03",
+      "status": "paid",
+      "issueDate": "2026-09-18",
+      "dueDate": "2026-09-25",
+      "items": [
+        {
+          "id": "ii-1",
+          "type": "product",
+          "description": "Pedrollo 1.0HP Automatic Water Booster Pump with flow control",
+          "quantity": 1,
+          "unitPrice": 38500,
+          "discount": 0,
+          "total": 38500
+        },
+        {
+          "id": "ii-2",
+          "type": "product",
+          "description": "PPR High-Pressure Pipe 32mm & High Temp Brass Unions",
+          "quantity": 4,
+          "unitPrice": 1650,
+          "discount": 0,
+          "total": 6600
+        },
+        {
+          "id": "ii-3",
+          "type": "service",
+          "description": "Borehole Submersible Overhaul, Fitting & Electrical Pressure Testing",
+          "quantity": 1,
+          "unitPrice": 14000,
+          "discount": 1000,
+          "total": 13000
+        }
+      ],
+      "subtotal": 58100,
+      "discountTotal": 1000,
+      "taxRate": 16,
+      "taxAmount": 9296,
+      "totalAmount": 67396,
+      "depositAmount": 0,
+      "paidAmount": 67396,
+      "balanceDue": 0,
+      "notes": "Payment received in full via Lipa Na M-Pesa. 1-year warranty on pump mechanical seal.",
+      "terms": "eTIMS Compliant Tax Invoice generated per Kenya Revenue Authority regulations.",
+      "eTimsData": {
+        "controlCode": "eTIMS-NBO-2026-0918-8821",
+        "qrData": "https://itax.kra.go.ke/KRA-Portal/invoiceVerification.htm?inv=eTIMS-NBO-2026-0918-8821",
+        "cuSerialNumber": "KRA-CU-099412-2026",
+        "taxInvoiceType": "Standard Rated B2B Tax Invoice"
+      },
+      "createdAt": "2026-09-18T13:15:00.000Z"
+    },
+    {
+      "id": "inv-02",
+      "orgId": "org-nairobi-prime-01",
+      "invoiceNumber": "INV-2026-0090",
+      "customerId": "cust-01",
+      "jobId": "job-01",
+      "status": "partial",
+      "issueDate": "2026-09-19",
+      "dueDate": "2026-10-03",
+      "items": [
+        {
+          "id": "ii-4",
+          "type": "service",
+          "description": "Precision AC Diagnostics, Chemical Coil Washing & Balancing",
+          "quantity": 1,
+          "unitPrice": 12000,
+          "discount": 0,
+          "total": 12000
+        },
+        {
+          "id": "ii-5",
+          "type": "product",
+          "description": "R410A Refrigerant Gas Recharge (Server Room AC)",
+          "quantity": 1,
+          "unitPrice": 14500,
+          "discount": 0,
+          "total": 14500
+        }
+      ],
+      "subtotal": 26500,
+      "discountTotal": 0,
+      "taxRate": 16,
+      "taxAmount": 4240,
+      "totalAmount": 30740,
+      "depositAmount": 15000,
+      "paidAmount": 15000,
+      "balanceDue": 15740,
+      "notes": "Advance deposit received. Balance due within 14 days upon final report.",
+      "terms": "Lipa Na M-Pesa Paybill: 522522, Account No: INV-2026-0090",
+      "eTimsData": {
+        "controlCode": "eTIMS-NBO-2026-0919-9104",
+        "qrData": "https://itax.kra.go.ke/KRA-Portal/invoiceVerification.htm?inv=eTIMS-NBO-2026-0919-9104",
+        "cuSerialNumber": "KRA-CU-099412-2026",
+        "taxInvoiceType": "Standard Rated Tax Invoice"
+      },
+      "createdAt": "2026-09-19T08:00:00.000Z"
+    },
+    {
+      "id": "inv-03",
+      "orgId": "org-nairobi-prime-01",
+      "invoiceNumber": "INV-2026-0085",
+      "customerId": "cust-04",
+      "status": "overdue",
+      "issueDate": "2026-08-25",
+      "dueDate": "2026-09-08",
+      "items": [
+        {
+          "id": "ii-6",
+          "type": "service",
+          "description": "Emergency Hydro-jetting and Main Waste Pipe Clearance",
+          "quantity": 1,
+          "unitPrice": 22000,
+          "discount": 0,
+          "total": 22000
+        }
+      ],
+      "subtotal": 22000,
+      "discountTotal": 0,
+      "taxRate": 16,
+      "taxAmount": 3520,
+      "totalAmount": 25520,
+      "depositAmount": 0,
+      "paidAmount": 0,
+      "balanceDue": 25520,
+      "notes": "Kindly clear balance to avoid disruption of emergency dispatch services.",
+      "terms": "Overdue by 11 days. Payment via M-Pesa or Bank EFT.",
+      "eTimsData": {
+        "controlCode": "eTIMS-NBO-2026-0825-7712",
+        "qrData": "https://itax.kra.go.ke/KRA-Portal/invoiceVerification.htm?inv=eTIMS-NBO-2026-0825-7712",
+        "cuSerialNumber": "KRA-CU-099412-2026",
+        "taxInvoiceType": "Standard Rated Tax Invoice"
+      },
+      "createdAt": "2026-08-25T14:00:00.000Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-01",
+      "orgId": "org-nairobi-prime-01",
+      "invoiceId": "inv-01",
+      "invoiceNumber": "INV-2026-0089",
+      "customerId": "cust-02",
+      "amount": 67396,
+      "paymentMethod": "mpesa",
+      "reference": "QHJ94K81PZ",
+      "phoneNumber": "+254 733 999 444",
+      "status": "completed",
+      "notes": "Lipa Na M-Pesa Paybill confirmation received instantly.",
+      "receivedAt": "2026-09-18T13:30:00.000Z",
+      "receivedBy": "System Auto-Reconciliation"
+    },
+    {
+      "id": "pay-02",
+      "orgId": "org-nairobi-prime-01",
+      "invoiceId": "inv-02",
+      "invoiceNumber": "INV-2026-0090",
+      "customerId": "cust-01",
+      "amount": 15000,
+      "paymentMethod": "bank_transfer",
+      "reference": "KCB-EFT-992104-NBO",
+      "phoneNumber": "+254 722 000 111",
+      "status": "completed",
+      "notes": "Corporate procurement initial commitment payment.",
+      "receivedAt": "2026-09-19T08:15:00.000Z",
+      "receivedBy": "Mercy Achieng (Accountant)"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-01",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "HVAC-REF-410A",
+      "name": "R410A Refrigerant Gas (11.3kg Cylinder)",
+      "type": "part",
+      "category": "HVAC Supplies",
+      "costPrice": 8500,
+      "sellingPrice": 14500,
+      "stockQuantity": 18,
+      "minStockLevel": 5,
+      "warehouseId": "wh-01",
+      "unit": "cylinder",
+      "createdAt": "2026-01-10T08:00:00.000Z"
+    },
+    {
+      "id": "prod-02",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "ELEC-MCB-63A-3P",
+      "name": "Schneider 63A 3-Phase MCB Circuit Breaker",
+      "type": "part",
+      "category": "Electrical Components",
+      "costPrice": 4200,
+      "sellingPrice": 6800,
+      "stockQuantity": 34,
+      "minStockLevel": 10,
+      "warehouseId": "wh-01",
+      "unit": "piece",
+      "createdAt": "2026-01-10T08:00:00.000Z"
+    },
+    {
+      "id": "prod-03",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "PLUMB-PUMP-BOOST-1HP",
+      "name": "Pedrollo 1.0HP Automatic Water Booster Pump",
+      "type": "product",
+      "category": "Pumps & Motors",
+      "costPrice": 28000,
+      "sellingPrice": 38500,
+      "stockQuantity": 7,
+      "minStockLevel": 3,
+      "warehouseId": "wh-01",
+      "unit": "unit",
+      "createdAt": "2026-01-12T09:00:00.000Z"
+    },
+    {
+      "id": "prod-04",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "PLUMB-PPR-32MM",
+      "name": "PPR High-Pressure Pipe 32mm (4m length)",
+      "type": "part",
+      "category": "Pipes & Fittings",
+      "costPrice": 950,
+      "sellingPrice": 1650,
+      "stockQuantity": 120,
+      "minStockLevel": 25,
+      "warehouseId": "wh-01",
+      "unit": "length",
+      "createdAt": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "prod-05",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "SRV-HVAC-DIAG",
+      "name": "Standard Commercial HVAC Diagnostic & Inspection",
+      "type": "service",
+      "category": "Labour & Engineering",
+      "costPrice": 2000,
+      "sellingPrice": 5000,
+      "stockQuantity": 9999,
+      "minStockLevel": 0,
+      "warehouseId": "wh-01",
+      "unit": "visit",
+      "createdAt": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "prod-06",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "SRV-ELEC-LABOUR-HR",
+      "name": "Licensed Electrician Standard Labour (Per Hour)",
+      "type": "service",
+      "category": "Labour & Engineering",
+      "costPrice": 1200,
+      "sellingPrice": 2500,
+      "stockQuantity": 9999,
+      "minStockLevel": 0,
+      "warehouseId": "wh-01",
+      "unit": "hour",
+      "createdAt": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "prod-07",
+      "orgId": "org-nairobi-prime-01",
+      "sku": "ELEC-SOLAR-INV-5KW",
+      "name": "Victron MultiPlus-II 48/5000 Inverter Charger",
+      "type": "product",
+      "category": "Solar & Backup",
+      "costPrice": 195000,
+      "sellingPrice": 245000,
+      "stockQuantity": 4,
+      "minStockLevel": 2,
+      "warehouseId": "wh-01",
+      "unit": "unit",
+      "createdAt": "2026-02-01T11:00:00.000Z"
+    }
+  ],
+  "warehouses": [
+    {
+      "id": "wh-01",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Nairobi Central Store & Workshop",
+      "location": "Industrial Area, Road C, Nairobi",
+      "isMain": true
+    },
+    {
+      "id": "wh-02",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Van 1 Mobile Stock (Brian)",
+      "location": "Mobile Technician Van KDG 441X",
+      "isMain": false,
+      "technicianId": "tech-01"
+    },
+    {
+      "id": "wh-03",
+      "orgId": "org-nairobi-prime-01",
+      "name": "Van 2 Mobile Stock (Dennis)",
+      "location": "Mobile Technician Van KDA 789M",
+      "isMain": false,
+      "technicianId": "tech-02"
+    }
+  ],
+  "inventoryTransactions": [
+    {
+      "id": "it-01",
+      "orgId": "org-nairobi-prime-01",
+      "productId": "prod-03",
+      "productName": "Pedrollo 1.0HP Automatic Water Booster Pump",
+      "type": "job_consumption",
+      "quantity": -1,
+      "previousQuantity": 8,
+      "newQuantity": 7,
+      "referenceId": "job-03",
+      "notes": "Installed on Job #JOB-2026-0103 for Kilimani Crest",
+      "timestamp": "2026-09-18T12:55:00.000Z",
+      "userName": "Samuel Chege"
+    },
+    {
+      "id": "it-02",
+      "orgId": "org-nairobi-prime-01",
+      "productId": "prod-04",
+      "productName": "PPR High-Pressure Pipe 32mm",
+      "type": "job_consumption",
+      "quantity": -4,
+      "previousQuantity": 124,
+      "newQuantity": 120,
+      "referenceId": "job-03",
+      "notes": "Installed on Job #JOB-2026-0103 for Kilimani Crest",
+      "timestamp": "2026-09-18T12:55:00.000Z",
+      "userName": "Samuel Chege"
+    },
+    {
+      "id": "it-03",
+      "orgId": "org-nairobi-prime-01",
+      "productId": "prod-01",
+      "productName": "R410A Refrigerant Gas (11.3kg Cylinder)",
+      "type": "purchase",
+      "quantity": 10,
+      "previousQuantity": 8,
+      "newQuantity": 18,
+      "referenceId": "PO-2026-044",
+      "notes": "Import shipment delivered by Kenya Refrigeration Wholesalers",
+      "timestamp": "2026-09-15T09:30:00.000Z",
+      "userName": "Faith Wanjiku"
+    }
+  ],
+  "forms": [
+    {
+      "id": "form-01",
+      "orgId": "org-nairobi-prime-01",
+      "title": "Electrical Safety & Earth Loop Verification Inspection",
+      "category": "safety",
+      "description": "Mandatory before commissioning high-voltage or solar installations per EPRA guidelines.",
+      "fields": [
+        {
+          "id": "f-1",
+          "label": "Main Incomer Supply Voltage (L-N)",
+          "type": "number",
+          "required": true,
+          "placeholder": "230 V"
+        },
+        {
+          "id": "f-2",
+          "label": "Earth Resistance Test (Ohms)",
+          "type": "number",
+          "required": true,
+          "placeholder": "< 5 Ohms"
+        },
+        {
+          "id": "f-3",
+          "label": "RCD / Earth Leakage Trip Time (ms)",
+          "type": "number",
+          "required": true,
+          "placeholder": "e.g. 24ms"
+        },
+        {
+          "id": "f-4",
+          "label": "Phase balance within 10% tolerance?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "id": "f-5",
+          "label": "Wiring insulation integrity condition",
+          "type": "dropdown",
+          "required": true,
+          "options": [
+            "Excellent",
+            "Acceptable",
+            "Degraded / Requires Rewire"
+          ]
+        },
+        {
+          "id": "f-6",
+          "label": "Photo of distribution panel with cover removed",
+          "type": "photo",
+          "required": true
+        },
+        {
+          "id": "f-7",
+          "label": "Licensed Technician Signature",
+          "type": "signature",
+          "required": true
+        }
+      ],
+      "createdAt": "2026-01-20T10:00:00.000Z"
+    },
+    {
+      "id": "form-02",
+      "orgId": "org-nairobi-prime-01",
+      "title": "HVAC Air Conditioning Commissioning & Handover Checklist",
+      "category": "completion",
+      "description": "Final checklist signed with the client upon testing cooling output.",
+      "fields": [
+        {
+          "id": "f-201",
+          "label": "Condensate drain gravity flow confirmed unobstructed?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "id": "f-202",
+          "label": "Room target temperature achieved (°C)",
+          "type": "number",
+          "required": true,
+          "placeholder": "e.g. 19.5"
+        },
+        {
+          "id": "f-203",
+          "label": "Refrigerant standing pressure (PSI)",
+          "type": "number",
+          "required": true,
+          "placeholder": "e.g. 125"
+        },
+        {
+          "id": "f-204",
+          "label": "Client training conducted on remote & timer operation?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "id": "f-205",
+          "label": "Customer Representative Signature",
+          "type": "signature",
+          "required": true
+        }
+      ],
+      "createdAt": "2026-02-01T12:00:00.000Z"
+    }
+  ],
+  "formSubmissions": [],
+  "notifications": [
+    {
+      "id": "notif-7454c6f7",
+      "orgId": "org-nairobi-prime-01",
+      "title": "New Job Created: JOB-2026-0012",
+      "message": "Emergency HVAC Pump Check scheduled for 2026-09-22",
+      "type": "appointment",
+      "channel": "in_app",
+      "read": false,
+      "link": "jobs",
+      "createdAt": "2026-09-22T09:26:43.633Z"
+    },
+    {
+      "id": "notif-01",
+      "orgId": "org-nairobi-prime-01",
+      "title": "Payment Received: KES 67,396 (M-Pesa)",
+      "message": "M-Pesa receipt QHJ94K81PZ confirmed for Invoice #INV-2026-0089 (Kilimani Crest).",
+      "type": "payment",
+      "channel": "in_app",
+      "read": false,
+      "link": "invoices",
+      "createdAt": "2026-09-18T13:30:00.000Z"
+    },
+    {
+      "id": "notif-02",
+      "orgId": "org-nairobi-prime-01",
+      "title": "Technician En Route: Dennis Mutua",
+      "message": "Dennis marked en route to Dr. Evans Kipchumba (Karen) for Inverter Backup job.",
+      "type": "status",
+      "channel": "in_app",
+      "read": false,
+      "link": "jobs",
+      "createdAt": "2026-09-19T09:15:00.000Z"
+    },
+    {
+      "id": "notif-03",
+      "orgId": "org-nairobi-prime-01",
+      "title": "Inventory Alert: Pedrollo 1.0HP Pump",
+      "message": "Stock level at 7 units (reorder threshold is 3 units). Consider restocking.",
+      "type": "inventory",
+      "channel": "in_app",
+      "read": true,
+      "link": "inventory",
+      "createdAt": "2026-09-18T14:00:00.000Z"
+    },
+    {
+      "id": "notif-04",
+      "orgId": "org-nairobi-prime-01",
+      "title": "Customer Approved Estimate EST-2026-0042",
+      "message": "Safaricom Plaza Facilities approved annual HVAC maintenance proposal.",
+      "type": "appointment",
+      "channel": "in_app",
+      "read": true,
+      "link": "estimates",
+      "createdAt": "2026-09-15T11:20:00.000Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log-daf5ea23",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "sys",
+      "userName": "Authorized User",
+      "action": "JOB_CREATED",
+      "entity": "Job",
+      "entityId": "job-2689fdb9",
+      "previousValue": "",
+      "newValue": "JOB-2026-0012",
+      "timestamp": "2026-09-22T09:26:43.632Z"
+    },
+    {
+      "id": "log-01",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-dispatch-01",
+      "userName": "Kevin Omondi",
+      "action": "JOB_ASSIGNED",
+      "entity": "Job",
+      "entityId": "job-01",
+      "previousValue": "Unassigned",
+      "newValue": "Assigned to Brian Kiprop",
+      "timestamp": "2026-09-18T10:15:00.000Z"
+    },
+    {
+      "id": "log-02",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-tech-01",
+      "userName": "Brian Kiprop",
+      "action": "JOB_STATUS_CHANGE",
+      "entity": "Job",
+      "entityId": "job-01",
+      "previousValue": "scheduled",
+      "newValue": "in_progress",
+      "timestamp": "2026-09-19T08:25:00.000Z"
+    },
+    {
+      "id": "log-03",
+      "orgId": "org-nairobi-prime-01",
+      "userId": "usr-acct-01",
+      "userName": "Mercy Achieng",
+      "action": "PAYMENT_RECORDED",
+      "entity": "Payment",
+      "entityId": "pay-01",
+      "previousValue": "Invoice unpaid",
+      "newValue": "KES 67,396 via M-Pesa QHJ94K81PZ",
+      "timestamp": "2026-09-18T13:30:00.000Z"
+    }
+  ]
+}
