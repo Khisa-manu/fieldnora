@@ -631,7 +631,7 @@ Canvas(
                     <span>3. Permission Denied on ./gradlew (macOS / Linux)</span>
                   </div>
                   <p className="text-[11px] text-slate-600">
-                    Grant execute permissions to the Gradle wrapper wrapper script:
+                    Grant execute permissions to the Gradle wrapper script:
                   </p>
                   <pre className="text-[11px] font-mono bg-slate-900 text-emerald-300 p-2 rounded">
                     chmod +x ./gradlew &amp;&amp; ./gradlew assembleDebug
