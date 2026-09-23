@@ -39,7 +39,7 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager()
+    val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     var fullName by remember { mutableStateOf("") }

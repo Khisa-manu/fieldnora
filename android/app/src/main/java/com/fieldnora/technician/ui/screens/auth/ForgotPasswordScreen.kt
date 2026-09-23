@@ -42,7 +42,7 @@ fun ForgotPasswordScreen(
     onNavigateBackToLogin: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager()
+    val focusManager = LocalFocusManager.current
 
     var currentStep by remember { mutableStateOf(ResetStep.REQUEST_CODE) }
     var identifier by remember { mutableStateOf("") }
@@ -169,7 +169,7 @@ fun ForgotPasswordScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = if (currentStep == ResetStep.SUCCESS) Icons.Default.CheckCircle else Icons.Default.LockReset,
+                                    imageVector = if (currentStep == ResetStep.SUCCESS) Icons.Default.CheckCircle else Icons.Default.Lock,
                                     contentDescription = null,
                                     tint = FieldNoraTeal,
                                     modifier = Modifier.size(24.dp)
@@ -353,7 +353,7 @@ fun ForgotPasswordScreen(
                                 placeholder = { Text("123456") },
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.Pin,
+                                        Icons.Default.Lock,
                                         contentDescription = null,
                                         tint = if (verificationCode.isNotBlank()) FieldNoraTeal else Slate500
                                     )
@@ -425,7 +425,7 @@ fun ForgotPasswordScreen(
                                 placeholder = { Text("Re-enter new password") },
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.LockReset,
+                                        Icons.Default.Lock,
                                         contentDescription = null,
                                         tint = if (confirmPassword.isNotBlank()) FieldNoraTeal else Slate500
                                     )

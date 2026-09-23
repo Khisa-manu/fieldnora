@@ -41,7 +41,7 @@ fun LoginScreen(
     onNavigateToForgotPassword: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager()
+    val focusManager = LocalFocusManager.current
 
     var identifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
