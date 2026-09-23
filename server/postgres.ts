@@ -86,7 +86,21 @@ export async function initPostgresDatabase(): Promise<boolean> {
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
-      });
+        onConnect: async (client: pg.PoolClient) => {
+          try {
+            await client.query(`
+              DO $$
+              BEGIN
+                IF CURRENT_USER = 'authenticator' AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                  EXECUTE 'SET ROLE authenticated';
+                END IF;
+              END $$;
+            `);
+          } catch {
+            // Ignore if role switch is not supported or not needed
+          }
+        },
+      } as any);
 
       // Test connection and establish schema privileges
       const client = await pool.connect();
@@ -95,8 +109,8 @@ export async function initPostgresDatabase(): Promise<boolean> {
           await client.query(`
             DO $$
             BEGIN
-              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-                SET ROLE authenticated;
+              IF CURRENT_USER = 'authenticator' AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                EXECUTE 'SET ROLE authenticated';
               END IF;
               BEGIN
                 GRANT USAGE ON SCHEMA public TO PUBLIC;
