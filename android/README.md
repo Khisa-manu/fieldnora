@@ -54,6 +54,48 @@ android/app/build/outputs/apk/release/app-release.apk
 
 ---
 
+## 🛠️ Common Build Issues & Troubleshooting
+
+### 1. "SDK location not found" / Missing `ANDROID_HOME`
+If running Gradle from the command line, Android Gradle Plugin needs to know where your Android SDK lives. Create a `local.properties` file inside `android/`:
+```properties
+# macOS:
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
+
+# Windows:
+sdk.dir=C:\\Users\\YOUR_USERNAME\\AppData\\Local\\Android\\Sdk
+
+# Linux:
+sdk.dir=/home/YOUR_USERNAME/Android/Sdk
+```
+Alternatively, set the environment variable:
+```bash
+export ANDROID_HOME=$HOME/Library/Android/sdk # (macOS)
+export ANDROID_HOME=$HOME/Android/Sdk        # (Linux)
+```
+
+### 2. JDK Version Requirement (Java 17)
+Android Gradle Plugin 8.4 requires **Java 17**. Check your active Java version:
+```bash
+java -version
+```
+In Android Studio, confirm the Gradle JDK is set to JDK 17 under **Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK**.
+
+### 3. Execution Permission on `./gradlew`
+If you receive `permission denied: ./gradlew`, grant execute permissions:
+```bash
+chmod +x ./gradlew
+```
+
+### 4. Direct Device Install via ADB
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+# or release:
+adb install -r app/build/outputs/apk/release/app-release.apk
+```
+
+---
+
 ## 🏗️ Project Directory Structure
 
 ```text

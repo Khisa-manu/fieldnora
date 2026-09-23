@@ -592,6 +592,53 @@ Canvas(
                 </p>
               </div>
             </div>
+
+            {/* Troubleshooting Common Build Failures */}
+            <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  Common APK Build Errors &amp; Fixes
+                </span>
+                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                  Quick Solutions
+                </span>
+              </div>
+              <div className="space-y-2 text-xs text-amber-900">
+                <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200/60 space-y-1">
+                  <div className="font-bold text-amber-950 flex items-center gap-1">
+                    <span>1. "SDK location not found" / Missing ANDROID_HOME</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Gradle needs to know where your Android SDK is located. In your <code className="font-mono bg-slate-100 px-1 rounded">android/</code> directory, create a file named <code className="font-mono bg-slate-100 px-1 rounded">local.properties</code>:
+                  </p>
+                  <pre className="text-[11px] font-mono bg-slate-900 text-amber-300 p-2 rounded">
+                    # macOS: sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk&#10;# Linux: sdk.dir=/home/YOUR_USERNAME/Android/Sdk&#10;# Windows: sdk.dir=C:\\Users\\YOUR_USERNAME\\AppData\\Local\\Android\\Sdk
+                  </pre>
+                </div>
+
+                <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200/60 space-y-1">
+                  <div className="font-bold text-amber-950 flex items-center gap-1">
+                    <span>2. Java Runtime Version (Requires JDK 17)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Android Gradle Plugin 8.4 requires <strong>Java 17</strong>. Verify via <code className="font-mono bg-slate-100 px-1 rounded">java -version</code>. If using Android Studio, it uses its bundled JDK 17 automatically under <strong>Settings ➔ Build, Execution, Deployment ➔ Build Tools ➔ Gradle ➔ Gradle JDK</strong>.
+                  </p>
+                </div>
+
+                <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200/60 space-y-1">
+                  <div className="font-bold text-amber-950 flex items-center gap-1">
+                    <span>3. Permission Denied on ./gradlew (macOS / Linux)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Grant execute permissions to the Gradle wrapper wrapper script:
+                  </p>
+                  <pre className="text-[11px] font-mono bg-slate-900 text-emerald-300 p-2 rounded">
+                    chmod +x ./gradlew &amp;&amp; ./gradlew assembleDebug
+                  </pre>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Code Viewer Tabs */}
