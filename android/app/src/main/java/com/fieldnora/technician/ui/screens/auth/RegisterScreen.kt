@@ -393,9 +393,10 @@ fun RegisterScreen(
                                             fontSize = 11.sp,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                             color = if (isSelected) FieldNoraTealDark else Slate700,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                             modifier = Modifier
+                                                .fillMaxWidth()
                                                 .padding(vertical = 9.dp, horizontal = 8.dp)
-                                                .align(Alignment.CenterHorizontally)
                                         )
                                     }
                                 }

@@ -32,7 +32,8 @@ fun JobDetailScreen(
     jobId: String,
     repository: JobRepository,
     onNavigateBack: () -> Unit,
-    onOpenSignature: (String) -> Unit
+    onOpenSignature: (String) -> Unit,
+    onOpenTracking: (String) -> Unit = {}
 ) {
     val jobs by repository.jobs.collectAsState()
     val job = remember(jobs, jobId) { jobs.firstOrNull { it.id == jobId } }
@@ -143,26 +144,17 @@ fun JobDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // GPS Intent
+                        // Live Tracking & GPS Intent
                         OutlinedButton(
                             onClick = {
-                                try {
-                                    val gmmIntentUri = Uri.parse("geo:${job.safeCustomer.latitude},${job.safeCustomer.longitude}?q=${Uri.encode(job.safeCustomer.address)}")
-                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
-                                    context.startActivity(mapIntent)
-                                } catch (e: Exception) {
-                                    try {
-                                        val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(job.safeCustomer.address)}")
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
-                                    } catch (_: Exception) {}
-                                }
+                                onOpenTracking(job.id)
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("GPS", fontSize = 12.sp)
+                            Text("Track", fontSize = 12.sp)
                         }
 
                         // Call Intent

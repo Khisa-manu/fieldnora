@@ -24,6 +24,7 @@ import com.fieldnora.technician.ui.screens.jobdetail.JobDetailScreen
 import com.fieldnora.technician.ui.screens.jobs.JobsListScreen
 import com.fieldnora.technician.ui.screens.settings.SettingsScreen
 import com.fieldnora.technician.ui.screens.signature.SignatureScreen
+import com.fieldnora.technician.ui.screens.tracking.LiveTrackingScreen
 import com.fieldnora.technician.ui.theme.*
 
 data class BottomNavItem(
@@ -181,7 +182,28 @@ fun MainNavHost(
                     onNavigateBack = { navController.popBackStack() },
                     onOpenSignature = { id ->
                         navController.navigate(Screen.Signature.createRoute(id))
+                    },
+                    onOpenTracking = { id ->
+                        navController.navigate(Screen.LiveTracking.createRoute(id))
                     }
+                )
+            }
+
+            composable(
+                route = Screen.LiveTracking.route,
+                arguments = listOf(navArgument("jobId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
+                val job = repository.jobs.collectAsState().value.firstOrNull { it.id == jobId }
+                val currentTech = repository.currentTechnician.collectAsState().value
+                LiveTrackingScreen(
+                    jobId = jobId,
+                    jobTitle = job?.title ?: "Field Service Order",
+                    destinationAddress = job?.safeCustomer?.address ?: "Nairobi, Kenya",
+                    destinationArea = job?.safeCustomer?.county ?: "Nairobi Region",
+                    technicianName = currentTech.name,
+                    onBack = { navController.popBackStack() },
+                    onViewJobDetails = { navController.popBackStack() }
                 )
             }
 

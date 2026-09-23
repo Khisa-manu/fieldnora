@@ -358,7 +358,7 @@ fun SignatureScreen(
                                 Icon(
                                     imageVector = if (isFilled) Icons.Filled.Star else Icons.Outlined.Star,
                                     contentDescription = "Rating $star",
-                                    tint = if (isFilled) NoraGreenPrimary else Slate300(),
+                                    tint = if (isFilled) NoraGreenPrimary else Slate300,
                                     modifier = Modifier
                                         .size(22.dp)
                                         .clickable { starRating = star }
@@ -378,10 +378,10 @@ fun SignatureScreen(
                         OutlinedTextField(
                             value = additionalNotes,
                             onValueChange = { additionalNotes = it },
-                            placeholder = { Text("Add any notes or feedback...", fontSize = 12.sp, color = Slate400()) },
+                            placeholder = { Text("Add any notes or feedback...", fontSize = 12.sp, color = Slate400) },
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
-                                Icon(Icons.Default.Edit, contentDescription = null, tint = Slate400(), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = Slate400, modifier = Modifier.size(16.dp))
                             },
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -539,7 +539,7 @@ fun SignatureScreen(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = NoraGreenPrimary,
                                 uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Slate300()
+                                uncheckedTrackColor = Slate300
                             )
                         )
                     }
@@ -648,6 +648,3 @@ fun SignatureScreen(
         )
     }
 }
-
-private fun Slate300() = Color(0xFFCBD5E1)
-private fun Slate400() = Color(0xFF94A3B8)

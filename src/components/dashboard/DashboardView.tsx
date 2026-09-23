@@ -280,8 +280,8 @@ export const DashboardView: React.FC = () => {
 
       // Merge backend active jobs into work orders
       if (backendJobs && backendJobs.length > 0) {
-        const techMap = new Map(techs.map(t => [t.id, t]));
-        const custMap = new Map(custsData.map(c => [c.id, c]));
+        const techMap = new Map<string, any>((techs as any[]).map((t: any) => [t.id, t] as const));
+        const custMap = new Map<string, any>((custsData as any[]).map((c: any) => [c.id, c] as const));
 
         setWorkOrders(prev => {
           const map = new Map<string, WorkOrderItem>();

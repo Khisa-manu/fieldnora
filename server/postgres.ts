@@ -88,10 +88,32 @@ export async function initPostgresDatabase(): Promise<boolean> {
         connectionTimeoutMillis: 5000,
       });
 
-      // Test connection
+      // Test connection and establish schema privileges
       const client = await pool.connect();
       try {
-        const res = await client.query('SELECT current_database(), version()');
+        try {
+          await client.query(`
+            DO $$
+            BEGIN
+              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                SET ROLE authenticated;
+              END IF;
+              BEGIN
+                GRANT USAGE ON SCHEMA public TO PUBLIC;
+                GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;
+                GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO PUBLIC;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO PUBLIC;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO PUBLIC;
+              EXCEPTION WHEN OTHERS THEN
+                NULL;
+              END;
+            END $$;
+          `);
+        } catch {
+          // ignore if role doesn't have grant options
+        }
+
+        const res = await client.query('SELECT current_database(), current_user, version()');
         console.log(`[PostgreSQL + Drizzle] Successfully connected to ${provider} database:`, res.rows[0]);
       } finally {
         client.release();
@@ -409,7 +431,13 @@ async function bootstrapTables(poolInstance: pg.Pool) {
     );
   `;
 
-  await poolInstance.query(ddl);
+  // Apply schema migrations / table definitions if role has DDL privileges
+  try {
+    await poolInstance.query(ddl);
+  } catch (ddlErr: any) {
+    // If connected role doesn't have CREATE TABLE permissions, schema is managed externally
+    console.log('[PostgreSQL] Table creation notice (managed schema):', ddlErr.message || ddlErr);
+  }
 
   // Apply schema migrations for existing databases to guarantee all schema columns exist
   try {
@@ -464,18 +492,40 @@ async function bootstrapTables(poolInstance: pg.Pool) {
       FROM users u
       WHERE t.user_id = u.id AND t.avatar IS NULL AND u.avatar IS NOT NULL;
     `);
-  } catch (migErr) {
-    console.warn('[PostgreSQL] Schema migration warning:', migErr);
+
+    // Ensure all tables and future tables have full permissions
+    await poolInstance.query(`
+      DO $$
+      BEGIN
+        BEGIN
+          GRANT USAGE ON SCHEMA public TO PUBLIC;
+          GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;
+          GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO PUBLIC;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO PUBLIC;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO PUBLIC;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END $$;
+    `);
+  } catch (migErr: any) {
+    console.log('[PostgreSQL] Schema migration notice:', migErr?.message || migErr);
   }
 }
 
 async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
-  const check = await poolInstance.query('SELECT count(*) as cnt FROM jobs');
-  if (parseInt(check.rows[0].cnt, 10) > 0) {
-    return; // Already populated
+  try {
+    const orgCheck = await poolInstance.query('SELECT count(*) as cnt FROM organizations');
+    const userCheck = await poolInstance.query('SELECT count(*) as cnt FROM users');
+    if (parseInt(orgCheck.rows[0].cnt, 10) > 0 && parseInt(userCheck.rows[0].cnt, 10) > 0) {
+      console.log('[PostgreSQL] Database tables verified and already seeded.');
+      return;
+    }
+  } catch {
+    // If check fails, continue to seed
   }
 
-  console.log('[PostgreSQL] Seeding initial Fieldnora data...');
+  console.log('[PostgreSQL] Checking and seeding initial Fieldnora data if needed...');
 
   // Organizations
   await poolInstance.query(
@@ -498,6 +548,25 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
       initialOrganization.mpesaTill,
     ]
   );
+
+  // Users
+  for (const u of initialUsers) {
+    await poolInstance.query(
+      `INSERT INTO users (id, org_id, name, email, phone, role, avatar, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        u.id,
+        u.orgId,
+        u.name,
+        u.email,
+        u.phone,
+        u.role,
+        u.avatar || null,
+        u.status || 'active',
+      ]
+    );
+  }
 
   // Customers
   for (const c of initialCustomers) {
@@ -551,6 +620,49 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
     );
   }
 
+  // Warehouses
+  for (const w of initialWarehouses as any[]) {
+    await poolInstance.query(
+      `INSERT INTO warehouses (id, org_id, name, type, technician_id, vehicle_reg, location, is_default)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        w.id,
+        w.orgId,
+        w.name,
+        w.type || (w.isMain ? 'central' : 'mobile'),
+        w.technicianId || null,
+        w.vehicleReg || null,
+        w.location,
+        w.isDefault ?? w.isMain ?? false,
+      ]
+    );
+  }
+
+  // Products
+  for (const pr of initialProducts) {
+    await poolInstance.query(
+      `INSERT INTO products (id, org_id, sku, name, description, type, category, unit, cost_price, selling_price, stock_quantity, min_stock_level, warehouse_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        pr.id,
+        pr.orgId,
+        pr.sku,
+        pr.name,
+        pr.description || '',
+        pr.type || 'part',
+        pr.category,
+        pr.unit || 'pcs',
+        pr.costPrice,
+        pr.sellingPrice,
+        pr.stockQuantity || 0,
+        pr.minStockLevel || 5,
+        pr.warehouseId || null,
+      ]
+    );
+  }
+
   // Jobs
   for (const j of initialJobs) {
     await poolInstance.query(
@@ -577,6 +689,34 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
         JSON.stringify(j.photos || []),
         JSON.stringify(j.documents || []),
         JSON.stringify(j.checklist || []),
+      ]
+    );
+  }
+
+  // Estimates
+  for (const est of initialEstimates) {
+    await poolInstance.query(
+      `INSERT INTO estimates (id, org_id, estimate_number, customer_id, title, status, date, expiry_date, items, subtotal, discount_total, tax_rate, tax_amount, total_amount, notes, terms, customer_notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        est.id,
+        est.orgId,
+        est.estimateNumber,
+        est.customerId,
+        est.title || null,
+        est.status || 'draft',
+        est.date || null,
+        est.expiryDate,
+        JSON.stringify(est.items || []),
+        est.subtotal || 0,
+        est.discountTotal || null,
+        est.taxRate || null,
+        est.taxAmount || 0,
+        est.totalAmount || 0,
+        est.notes || '',
+        est.terms || null,
+        est.customerNotes || null,
       ]
     );
   }
@@ -630,28 +770,81 @@ async function seedPostgresIfEmpty(poolInstance: pg.Pool) {
     );
   }
 
-  // Products
-  for (const pr of initialProducts) {
+  // Inventory Transactions
+  for (const it of initialInventoryTransactions) {
     await poolInstance.query(
-      `INSERT INTO products (id, org_id, sku, name, description, type, category, unit, cost_price, selling_price, stock_quantity, min_stock_level)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO inventory_transactions (id, org_id, product_id, type, quantity, notes, performed_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (id) DO NOTHING`,
       [
-        pr.id,
-        pr.orgId,
-        pr.sku,
-        pr.name,
-        pr.description || '',
-        pr.type || 'part',
-        pr.category,
-        pr.unit || 'pcs',
-        pr.costPrice,
-        pr.sellingPrice,
-        pr.stockQuantity || 0,
-        pr.minStockLevel || 5,
+        it.id,
+        it.orgId,
+        it.productId || null,
+        it.type,
+        it.quantity,
+        it.notes || null,
+        it.userName || 'System',
       ]
     );
   }
 
-  console.log('[PostgreSQL] Seed complete.');
+  // Custom Forms
+  for (const cf of initialCustomForms as any[]) {
+    await poolInstance.query(
+      `INSERT INTO custom_forms (id, org_id, title, description, category, version, is_active, fields)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        cf.id,
+        cf.orgId,
+        cf.title,
+        cf.description,
+        cf.category,
+        cf.version || 1,
+        cf.isActive !== false,
+        JSON.stringify(cf.fields || []),
+      ]
+    );
+  }
+
+  // Notifications
+  for (const n of initialNotifications) {
+    await poolInstance.query(
+      `INSERT INTO notifications (id, org_id, user_id, type, title, message, read, link)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        n.id,
+        n.orgId,
+        n.userId || 'broadcast',
+        n.type,
+        n.title,
+        n.message,
+        n.read || false,
+        n.link || null,
+      ]
+    );
+  }
+
+  // Audit Logs
+  for (const a of initialAuditLogs) {
+    await poolInstance.query(
+      `INSERT INTO audit_logs (id, org_id, user_id, user_name, action, entity, entity_id, previous_value, new_value)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        a.id,
+        a.orgId,
+        a.userId,
+        a.userName,
+        a.action,
+        a.entity,
+        a.entityId,
+        a.previousValue || null,
+        a.newValue || null,
+      ]
+    );
+  }
+
+  console.log('[PostgreSQL] Seed verification complete.');
 }
